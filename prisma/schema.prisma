@@ -1,0 +1,111 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String
+  name      String
+  avatar    String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // 关联便签
+  notes     Note[]
+  // 关联用户设置
+  settings  UserSettings?
+  // 关联登录历史
+  loginHistory LoginHistory[]
+
+  @@map("users")
+}
+
+model Note {
+  id          Int       @id @default(autoincrement())
+  title       String
+  content     String?
+  color       String    @default("#ffffff")
+  tags        String[]
+  status      String    @default("published") // published, draft, scheduled
+  publishAt   DateTime? @map("publish_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  // 关联用户
+  userId      Int       @map("user_id")
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notes")
+}
+
+model Tag {
+  id    Int    @id @default(autoincrement())
+  name  String @unique
+  color String @default("#3b82f6")
+
+  @@map("tags")
+}
+
+model UserSettings {
+  id                Int      @id @default(autoincrement())
+  userId            Int      @unique @map("user_id")
+
+  // 隐私设置
+  dataCollection    Boolean  @default(true) @map("data_collection")
+  analyticsTracking Boolean  @default(false) @map("analytics_tracking")
+  shareUsageData    Boolean  @default(false) @map("share_usage_data")
+
+  // 通知设置
+  emailNotifications Boolean @default(true) @map("email_notifications")
+  scheduledReminders Boolean @default(true) @map("scheduled_reminders")
+  systemMessages     Boolean @default(true) @map("system_messages")
+  reminderFrequency  String  @default("daily") @map("reminder_frequency")
+
+  // 个人偏好
+  theme             String  @default("system")
+  language          String  @default("zh-CN")
+  timezone          String  @default("Asia/Shanghai")
+  dateFormat        String  @default("YYYY-MM-DD") @map("date_format")
+  autoSave          Boolean @default(true) @map("auto_save")
+
+  // 便签设置
+  defaultColor      String  @default("#ffffff") @map("default_color")
+  fontSize          Int     @default(14) @map("font_size")
+  autoSaveInterval  Int     @default(30) @map("auto_save_interval")
+  defaultTags       String[] @map("default_tags")
+
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  // 关联用户
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_settings")
+}
+
+model LoginHistory {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  ipAddress String?  @map("ip_address")
+  userAgent String?  @map("user_agent")
+  location  String?
+  success   Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // 关联用户
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("login_history")
+}

@@ -1,0 +1,102 @@
+{
+  "common": {
+    "loading": "読み込み中...",
+    "save": "保存",
+    "cancel": "キャンセル",
+    "delete": "削除",
+    "edit": "編集",
+    "confirm": "確認",
+    "success": "成功",
+    "error": "エラー",
+    "warning": "警告",
+    "info": "情報"
+  },
+  "navigation": {
+    "home": "ホーム",
+    "notes": "マイノート",
+    "scheduled": "予約投稿",
+    "profile": "プロフィール",
+    "settings": "設定"
+  },
+  "auth": {
+    "signIn": "ログイン",
+    "signOut": "ログアウト",
+    "signUp": "新規登録",
+    "email": "メールアドレス",
+    "password": "パスワード",
+    "confirmPassword": "パスワード確認",
+    "name": "ユーザー名",
+    "forgotPassword": "パスワードを忘れた方",
+    "rememberMe": "ログイン状態を保持",
+    "loginSuccess": "ログイン成功",
+    "loginFailed": "ログイン失敗",
+    "logoutSuccess": "ログアウト成功"
+  },
+  "notes": {
+    "title": "タイトル",
+    "content": "内容",
+    "tags": "タグ",
+    "color": "色",
+    "status": "ステータス",
+    "createNote": "新規ノート",
+    "editNote": "ノート編集",
+    "deleteNote": "ノート削除",
+    "saveNote": "ノート保存",
+    "published": "公開済み",
+    "draft": "下書き",
+    "scheduled": "予約投稿",
+    "publishAt": "投稿日時",
+    "noNotes": "ノートがありません",
+    "searchPlaceholder": "ノートを検索...",
+    "addTag": "タグ追加",
+    "removeTag": "タグ削除"
+  },
+  "settings": {
+    "title": "設定",
+    "personalPreferences": "個人設定",
+    "notificationSettings": "通知設定",
+    "privacySettings": "プライバシー・セキュリティ",
+    "dataSettings": "データ管理",
+    "noteSettings": "ノート設定",
+    "theme": "テーマ",
+    "language": "言語",
+    "timezone": "タイムゾーン",
+    "dateFormat": "日付形式",
+    "autoSave": "自動保存",
+    "lightMode": "ライトモード",
+    "darkMode": "ダークモード",
+    "systemMode": "システム設定に従う",
+    "saveSuccess": "設定を保存しました",
+    "saveFailed": "保存に失敗しました"
+  },
+  "profile": {
+    "title": "プロフィール",
+    "userInfo": "ユーザー情報",
+    "accountActions": "アカウント操作",
+    "editName": "ユーザー名変更",
+    "changePassword": "パスワード変更",
+    "currentPassword": "現在のパスワード",
+    "newPassword": "新しいパスワード",
+    "accountStatus": "アカウント状態",
+    "loginStatus": "ログイン状態",
+    "active": "アクティブ",
+    "loggedIn": "ログイン中"
+  },
+  "languages": {
+    "zh": "简体中文",
+    "en": "English",
+    "ja": "日本語"
+  },
+  "timezones": {
+    "Asia/Shanghai": "中国標準時 (UTC+8)",
+    "America/New_York": "東部標準時 (UTC-5)",
+    "Europe/London": "グリニッジ標準時 (UTC+0)",
+    "Asia/Tokyo": "日本標準時 (UTC+9)"
+  },
+  "dateFormats": {
+    "YYYY-MM-DD": "2024-01-01",
+    "MM/DD/YYYY": "01/01/2024",
+    "DD/MM/YYYY": "01/01/2024",
+    "YYYY年MM月DD日": "2024年01月01日"
+  }
+}

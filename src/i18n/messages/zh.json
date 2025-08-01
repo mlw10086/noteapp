@@ -1,0 +1,102 @@
+{
+  "common": {
+    "loading": "加载中...",
+    "save": "保存",
+    "cancel": "取消",
+    "delete": "删除",
+    "edit": "编辑",
+    "confirm": "确认",
+    "success": "成功",
+    "error": "错误",
+    "warning": "警告",
+    "info": "信息"
+  },
+  "navigation": {
+    "home": "首页",
+    "notes": "我的便签",
+    "scheduled": "定时便签",
+    "profile": "个人资料",
+    "settings": "设置"
+  },
+  "auth": {
+    "signIn": "登录",
+    "signOut": "退出登录",
+    "signUp": "注册",
+    "email": "邮箱",
+    "password": "密码",
+    "confirmPassword": "确认密码",
+    "name": "用户名",
+    "forgotPassword": "忘记密码？",
+    "rememberMe": "记住我",
+    "loginSuccess": "登录成功",
+    "loginFailed": "登录失败",
+    "logoutSuccess": "退出成功"
+  },
+  "notes": {
+    "title": "标题",
+    "content": "内容",
+    "tags": "标签",
+    "color": "颜色",
+    "status": "状态",
+    "createNote": "新建便签",
+    "editNote": "编辑便签",
+    "deleteNote": "删除便签",
+    "saveNote": "保存便签",
+    "published": "已发布",
+    "draft": "草稿",
+    "scheduled": "定时发布",
+    "publishAt": "发布时间",
+    "noNotes": "暂无便签",
+    "searchPlaceholder": "搜索便签...",
+    "addTag": "添加标签",
+    "removeTag": "移除标签"
+  },
+  "settings": {
+    "title": "设置",
+    "personalPreferences": "个人偏好",
+    "notificationSettings": "通知设置",
+    "privacySettings": "隐私安全",
+    "dataSettings": "数据管理",
+    "noteSettings": "便签设置",
+    "theme": "主题",
+    "language": "语言",
+    "timezone": "时区",
+    "dateFormat": "日期格式",
+    "autoSave": "自动保存",
+    "lightMode": "亮色模式",
+    "darkMode": "暗色模式",
+    "systemMode": "跟随系统",
+    "saveSuccess": "设置已保存",
+    "saveFailed": "保存失败"
+  },
+  "profile": {
+    "title": "个人资料",
+    "userInfo": "用户信息",
+    "accountActions": "账户操作",
+    "editName": "修改用户名",
+    "changePassword": "修改密码",
+    "currentPassword": "当前密码",
+    "newPassword": "新密码",
+    "accountStatus": "账户状态",
+    "loginStatus": "登录状态",
+    "active": "活跃",
+    "loggedIn": "已登录"
+  },
+  "languages": {
+    "zh": "简体中文",
+    "en": "English",
+    "ja": "日本語"
+  },
+  "timezones": {
+    "Asia/Shanghai": "中国标准时间 (UTC+8)",
+    "America/New_York": "美国东部时间 (UTC-5)",
+    "Europe/London": "格林威治时间 (UTC+0)",
+    "Asia/Tokyo": "日本标准时间 (UTC+9)"
+  },
+  "dateFormats": {
+    "YYYY-MM-DD": "2024-01-01",
+    "MM/DD/YYYY": "01/01/2024",
+    "DD/MM/YYYY": "01/01/2024",
+    "YYYY年MM月DD日": "2024年01月01日"
+  }
+}

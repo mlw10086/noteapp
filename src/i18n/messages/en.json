@@ -1,0 +1,102 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "confirm": "Confirm",
+    "success": "Success",
+    "error": "Error",
+    "warning": "Warning",
+    "info": "Info"
+  },
+  "navigation": {
+    "home": "Home",
+    "notes": "My Notes",
+    "scheduled": "Scheduled Notes",
+    "profile": "Profile",
+    "settings": "Settings"
+  },
+  "auth": {
+    "signIn": "Sign In",
+    "signOut": "Sign Out",
+    "signUp": "Sign Up",
+    "email": "Email",
+    "password": "Password",
+    "confirmPassword": "Confirm Password",
+    "name": "Username",
+    "forgotPassword": "Forgot Password?",
+    "rememberMe": "Remember Me",
+    "loginSuccess": "Login Successful",
+    "loginFailed": "Login Failed",
+    "logoutSuccess": "Logout Successful"
+  },
+  "notes": {
+    "title": "Title",
+    "content": "Content",
+    "tags": "Tags",
+    "color": "Color",
+    "status": "Status",
+    "createNote": "Create Note",
+    "editNote": "Edit Note",
+    "deleteNote": "Delete Note",
+    "saveNote": "Save Note",
+    "published": "Published",
+    "draft": "Draft",
+    "scheduled": "Scheduled",
+    "publishAt": "Publish At",
+    "noNotes": "No notes yet",
+    "searchPlaceholder": "Search notes...",
+    "addTag": "Add Tag",
+    "removeTag": "Remove Tag"
+  },
+  "settings": {
+    "title": "Settings",
+    "personalPreferences": "Personal Preferences",
+    "notificationSettings": "Notification Settings",
+    "privacySettings": "Privacy & Security",
+    "dataSettings": "Data Management",
+    "noteSettings": "Note Settings",
+    "theme": "Theme",
+    "language": "Language",
+    "timezone": "Timezone",
+    "dateFormat": "Date Format",
+    "autoSave": "Auto Save",
+    "lightMode": "Light Mode",
+    "darkMode": "Dark Mode",
+    "systemMode": "Follow System",
+    "saveSuccess": "Settings Saved",
+    "saveFailed": "Save Failed"
+  },
+  "profile": {
+    "title": "Profile",
+    "userInfo": "User Information",
+    "accountActions": "Account Actions",
+    "editName": "Edit Username",
+    "changePassword": "Change Password",
+    "currentPassword": "Current Password",
+    "newPassword": "New Password",
+    "accountStatus": "Account Status",
+    "loginStatus": "Login Status",
+    "active": "Active",
+    "loggedIn": "Logged In"
+  },
+  "languages": {
+    "zh": "简体中文",
+    "en": "English",
+    "ja": "日本語"
+  },
+  "timezones": {
+    "Asia/Shanghai": "China Standard Time (UTC+8)",
+    "America/New_York": "Eastern Time (UTC-5)",
+    "Europe/London": "Greenwich Mean Time (UTC+0)",
+    "Asia/Tokyo": "Japan Standard Time (UTC+9)"
+  },
+  "dateFormats": {
+    "YYYY-MM-DD": "2024-01-01",
+    "MM/DD/YYYY": "01/01/2024",
+    "DD/MM/YYYY": "01/01/2024",
+    "YYYY年MM月DD日": "Jan 01, 2024"
+  }
+}
