@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useSession, signOut } from "next-auth/react"
@@ -23,6 +24,24 @@ export function Navbar() {
   const pathname = usePathname()
   const { data: session, status } = useSession()
   const t = useTranslations()
+  const [registrationEnabled, setRegistrationEnabled] = useState(true)
+
+  // 获取公开设置
+  useEffect(() => {
+    const fetchPublicSettings = async () => {
+      try {
+        const response = await fetch('/api/settings/public')
+        if (response.ok) {
+          const settings = await response.json()
+          setRegistrationEnabled(settings.site_registration_enabled !== false)
+        }
+      } catch (error) {
+        console.error('获取公开设置失败:', error)
+        // 默认允许注册
+      }
+    }
+    fetchPublicSettings()
+  }, [])
 
   const navItems = [
     {
@@ -143,12 +162,14 @@ export function Navbar() {
                     <span className="hidden sm:inline">{t('auth.signIn')}</span>
                   </Button>
                 </Link>
-                <Link href="/auth/signup">
-                  <Button size="sm">
-                    <UserPlus className="h-4 w-4 mr-2" />
-                    <span className="hidden sm:inline">{t('auth.signUp')}</span>
-                  </Button>
-                </Link>
+                {registrationEnabled && (
+                  <Link href="/auth/signup">
+                    <Button size="sm">
+                      <UserPlus className="h-4 w-4 mr-2" />
+                      <span className="hidden sm:inline">{t('auth.signUp')}</span>
+                    </Button>
+                  </Link>
+                )}
               </div>
             )}
           </div>

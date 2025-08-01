@@ -3,10 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages } from 'next-intl/server';
 import "./globals.css";
-import { Navbar } from "@/components/Navbar";
-import { SessionProvider } from "@/components/SessionProvider";
-import { SearchProvider } from "@/contexts/SearchContext";
-import { ThemeProvider } from "@/components/ThemeProvider";
+import { ConditionalLayout } from "@/components/ConditionalLayout";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -39,19 +36,9 @@ export default async function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <NextIntlClientProvider messages={messages}>
-          <ThemeProvider
-            attribute="class"
-            defaultTheme="system"
-            enableSystem
-            disableTransitionOnChange
-          >
-            <SessionProvider>
-              <SearchProvider>
-                <Navbar />
-                {children}
-              </SearchProvider>
-            </SessionProvider>
-          </ThemeProvider>
+          <ConditionalLayout>
+            {children}
+          </ConditionalLayout>
         </NextIntlClientProvider>
       </body>
     </html>

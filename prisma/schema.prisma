@@ -28,6 +28,8 @@ model User {
   settings  UserSettings?
   // 关联登录历史
   loginHistory LoginHistory[]
+  // 关联公告关闭记录
+  dismissedAnnouncements UserAnnouncementDismissal[]
 
   @@map("users")
 }
@@ -108,4 +110,95 @@ model LoginHistory {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("login_history")
+}
+
+// 管理员表
+model Admin {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String
+  name      String
+  avatar    String?
+  role      String   @default("admin") // admin, super_admin
+  isActive  Boolean  @default(true) @map("is_active")
+  lastLogin DateTime? @map("last_login")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // 关联管理员登录历史
+  loginHistory AdminLoginHistory[]
+  // 关联创建的公告
+  announcements Announcement[]
+
+  @@map("admins")
+}
+
+// 管理员登录历史表
+model AdminLoginHistory {
+  id        Int      @id @default(autoincrement())
+  adminId   Int      @map("admin_id")
+  ipAddress String?  @map("ip_address")
+  userAgent String?  @map("user_agent")
+  location  String?
+  success   Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // 关联管理员
+  admin     Admin    @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@map("admin_login_history")
+}
+
+// 站点设置表
+model SiteSettings {
+  id                Int      @id @default(autoincrement())
+  key               String   @unique
+  value             String
+  description       String?
+  type              String   @default("string") // string, boolean, number, json
+  category          String   @default("general") // general, security, features
+  isPublic          Boolean  @default(false) @map("is_public") // 是否可以在前端访问
+  updatedAt         DateTime @updatedAt @map("updated_at")
+  updatedBy         String?  @map("updated_by") // 更新者邮箱
+
+  @@map("site_settings")
+}
+
+// 公告表
+model Announcement {
+  id          Int       @id @default(autoincrement())
+  title       String
+  content     String
+  type        String    @default("info") // info, warning, success, error
+  priority    Int       @default(0) // 优先级，数字越大越靠前
+  isActive    Boolean   @default(true) @map("is_active")
+  startDate   DateTime? @map("start_date") // 开始显示时间
+  endDate     DateTime? @map("end_date")   // 结束显示时间
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  // 关联创建者
+  createdBy   Int       @map("created_by")
+  admin       Admin     @relation(fields: [createdBy], references: [id], onDelete: Cascade)
+
+  // 关联用户关闭记录
+  dismissedBy UserAnnouncementDismissal[]
+
+  @@map("announcements")
+}
+
+// 用户公告关闭记录表
+model UserAnnouncementDismissal {
+  id             Int          @id @default(autoincrement())
+  userId         Int          @map("user_id")
+  announcementId Int          @map("announcement_id")
+  dismissedAt    DateTime     @default(now()) @map("dismissed_at")
+
+  // 关联用户
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // 关联公告
+  announcement   Announcement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, announcementId])
+  @@map("user_announcement_dismissals")
 }

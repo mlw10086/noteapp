@@ -1,9 +1,19 @@
 import { NextRequest, NextResponse } from "next/server"
 import bcrypt from "bcryptjs"
 import { prisma } from "@/lib/prisma"
+import { isRegistrationEnabled } from "@/lib/maintenance-check"
 
 export async function POST(request: NextRequest) {
   try {
+    // 检查注册是否开启
+    const registrationEnabled = await isRegistrationEnabled()
+    if (!registrationEnabled) {
+      return NextResponse.json(
+        { error: "注册功能已关闭，请联系管理员" },
+        { status: 403 }
+      )
+    }
+
     const { email, password, name } = await request.json()
 
     // 验证输入

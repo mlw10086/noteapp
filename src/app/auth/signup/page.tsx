@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { useSession } from "next-auth/react"
+import { useSession, signIn } from "next-auth/react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -19,9 +19,29 @@ export default function SignUpPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [registrationEnabled, setRegistrationEnabled] = useState<boolean | null>(null)
   const router = useRouter()
   const { toasts, toast, removeToast } = useToast()
   const { data: session, status } = useSession()
+
+  // 获取公开设置
+  useEffect(() => {
+    const fetchPublicSettings = async () => {
+      try {
+        const response = await fetch('/api/settings/public')
+        if (response.ok) {
+          const settings = await response.json()
+          setRegistrationEnabled(settings.site_registration_enabled !== false)
+        } else {
+          setRegistrationEnabled(true) // 默认允许注册
+        }
+      } catch (error) {
+        console.error('获取公开设置失败:', error)
+        setRegistrationEnabled(true) // 默认允许注册
+      }
+    }
+    fetchPublicSettings()
+  }, [])
 
   // 如果用户已登录，重定向到首页
   useEffect(() => {
@@ -57,8 +77,28 @@ export default function SignUpPage() {
       const data = await response.json()
 
       if (response.ok) {
-        toast.success("注册成功", "请使用您的邮箱和密码登录")
-        router.push("/auth/signin")
+        toast.success("注册成功", "正在为您自动登录...")
+
+        // 自动登录
+        try {
+          const signInResult = await signIn("credentials", {
+            email,
+            password,
+            redirect: false,
+          })
+
+          if (signInResult?.ok) {
+            toast.success("登录成功", "欢迎使用便签系统！")
+            router.push("/")
+          } else {
+            toast.error("自动登录失败", "请手动登录")
+            router.push("/auth/signin")
+          }
+        } catch (loginError) {
+          console.error('自动登录错误:', loginError)
+          toast.error("自动登录失败", "请手动登录")
+          router.push("/auth/signin")
+        }
       } else {
         toast.error("注册失败", data.error || "注册时出现错误")
       }
@@ -70,8 +110,8 @@ export default function SignUpPage() {
     }
   }
 
-  // 如果正在加载认证状态，显示加载提示
-  if (status === "loading") {
+  // 如果正在加载认证状态或设置，显示加载提示
+  if (status === "loading" || registrationEnabled === null) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background px-4">
         <div className="text-center">
@@ -84,6 +124,35 @@ export default function SignUpPage() {
   // 如果已认证，不渲染页面内容（将被重定向）
   if (status === "authenticated") {
     return null
+  }
+
+  // 如果注册功能已关闭，显示提示信息
+  if (registrationEnabled === false) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background px-4">
+        <Card className="w-full max-w-md">
+          <CardHeader className="space-y-1">
+            <CardTitle className="text-2xl font-bold text-center">注册暂时关闭</CardTitle>
+            <CardDescription className="text-center">
+              系统管理员已暂时关闭用户注册功能
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="text-center space-y-4">
+            <p className="text-muted-foreground">
+              如需注册账户，请联系系统管理员
+            </p>
+            <div className="flex justify-center">
+              <Link href="/auth/signin">
+                <Button variant="outline">
+                  <LogIn className="h-4 w-4 mr-2" />
+                  返回登录
+                </Button>
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
   }
 
   return (
@@ -178,7 +247,7 @@ export default function SignUpPage() {
                 </Button>
               </div>
             </div>
-            <Button type="submit" className="w-full" disabled={isLoading}>
+            <Button type="submit" className="w-full" disabled={isLoading || !registrationEnabled}>
               {isLoading ? (
                 "注册中..."
               ) : (

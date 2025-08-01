@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react"
 import { useTranslations } from 'next-intl'
+import { useRouter } from "next/navigation"
+import { useSession } from "next-auth/react"
 import { Button } from "@/components/ui/button"
 import {
   AlertDialog,
@@ -18,6 +20,8 @@ import { NoteList } from "@/components/NoteList"
 import { NoteEditor } from "@/components/NoteEditor"
 import { TagManager } from "@/components/TagManager"
 import { AuthGuard } from "@/components/AuthGuard"
+import { AnnouncementBanner } from "@/components/AnnouncementBanner"
+import { AnnouncementModal } from "@/components/AnnouncementModal"
 import { useToast, ToastContainer } from "@/components/Toast"
 import { useSearch } from "@/contexts/SearchContext"
 
@@ -33,6 +37,15 @@ interface Note {
   updatedAt: Date
 }
 
+interface Announcement {
+  id: number
+  title: string
+  content: string
+  type: 'info' | 'warning' | 'success' | 'error'
+  priority: number
+  createdAt: string
+}
+
 export default function Home() {
   const [notes, setNotes] = useState<Note[]>([])
   const [isEditorOpen, setIsEditorOpen] = useState(false)
@@ -43,9 +56,56 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null)
   const [selectedNotes, setSelectedNotes] = useState<number[]>([])
   const [batchDeleteConfirmOpen, setBatchDeleteConfirmOpen] = useState(false)
+  const [announcements, setAnnouncements] = useState<Announcement[]>([])
+  const [announcementModalOpen, setAnnouncementModalOpen] = useState(false)
+  const [selectedAnnouncement, setSelectedAnnouncement] = useState<Announcement | null>(null)
   const { toasts, toast, removeToast } = useToast()
   const { searchQuery } = useSearch()
   const t = useTranslations()
+  const router = useRouter()
+  const { data: session, status } = useSession()
+
+  // 检查维护模式
+  const checkMaintenanceMode = async () => {
+    try {
+      console.log('[MaintenanceCheck] 开始检查维护模式')
+      const response = await fetch('/api/settings/maintenance')
+      console.log('[MaintenanceCheck] API响应状态:', response.status)
+
+      if (response.ok) {
+        const data = await response.json()
+        console.log('[MaintenanceCheck] API返回数据:', data)
+
+        if (data.maintenanceMode) {
+          console.log('[MaintenanceCheck] 维护模式已开启，重定向到维护页面')
+          router.replace('/maintenance')
+          return true
+        } else {
+          console.log('[MaintenanceCheck] 维护模式未开启，继续正常加载')
+        }
+      } else {
+        console.error('[MaintenanceCheck] API响应失败:', response.status)
+      }
+    } catch (error) {
+      console.error('[MaintenanceCheck] 检查维护模式失败:', error)
+    }
+    return false
+  }
+
+  // 获取公告
+  const fetchAnnouncements = async () => {
+    try {
+      const response = await fetch('/api/announcements')
+      if (response.ok) {
+        const data = await response.json()
+        setAnnouncements(data)
+      } else {
+        console.error('获取公告失败:', response.status)
+      }
+    } catch (error) {
+      console.error('获取公告失败:', error)
+    }
+  }
 
   // 获取所有便签
   const fetchNotes = async () => {
@@ -89,9 +149,30 @@ export default function Home() {
   }
 
   useEffect(() => {
-    fetchNotes()
-    fetchTags()
-  }, [])
+    // 只有在用户已认证时才初始化应用
+    if (status === "authenticated" && session) {
+      const initializeApp = async () => {
+        // 首先检查维护模式
+        const isInMaintenance = await checkMaintenanceMode()
+        if (isInMaintenance) {
+          return // 如果在维护模式，不继续加载
+        }
+
+        // 如果不在维护模式，正常加载数据
+        fetchNotes()
+        fetchTags()
+        fetchAnnouncements()
+      }
+
+      initializeApp()
+    } else if (status === "loading") {
+      // 认证状态加载中，保持loading状态
+      setLoading(true)
+    } else if (status === "unauthenticated") {
+      // 用户未认证，不加载数据
+      setLoading(false)
+    }
+  }, [status, session])
 
   // 过滤便签
   const filteredNotes = notes.filter(note => {
@@ -267,6 +348,21 @@ export default function Home() {
     )
   }
 
+  // 公告处理函数
+  const handleAnnouncementDismiss = (announcementId: number) => {
+    setAnnouncements(prev => prev.filter(a => a.id !== announcementId))
+  }
+
+  const handleAnnouncementViewDetails = (announcement: Announcement) => {
+    setSelectedAnnouncement(announcement)
+    setAnnouncementModalOpen(true)
+  }
+
+  const handleAnnouncementModalClose = () => {
+    setAnnouncementModalOpen(false)
+    setSelectedAnnouncement(null)
+  }
+
   // 清除标签筛选
   const handleClearTagFilters = () => {
     setSelectedTags([])
@@ -317,6 +413,7 @@ export default function Home() {
             setLoading(true)
             fetchNotes()
             fetchTags()
+            fetchAnnouncements()
           }}>
             重试
           </Button>
@@ -350,7 +447,14 @@ export default function Home() {
           />
         </div>
 
-
+        {/* 公告横幅 */}
+        {announcements.length > 0 && (
+          <AnnouncementBanner
+            announcements={announcements}
+            onDismiss={handleAnnouncementDismiss}
+            onViewDetails={handleAnnouncementViewDetails}
+          />
+        )}
 
         {/* 统计信息 */}
         {notes.length > 0 && (
@@ -405,6 +509,15 @@ export default function Home() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        {/* 公告弹窗 */}
+        <AnnouncementModal
+          announcements={announcements}
+          isOpen={announcementModalOpen}
+          onClose={handleAnnouncementModalClose}
+          onDismiss={handleAnnouncementDismiss}
+          initialAnnouncementId={selectedAnnouncement?.id}
+        />
         </div>
       </div>
     </AuthGuard>
