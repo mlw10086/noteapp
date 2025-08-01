@@ -24,6 +24,7 @@ import { AnnouncementBanner } from "@/components/AnnouncementBanner"
 import { AnnouncementModal } from "@/components/AnnouncementModal"
 import { useToast, ToastContainer } from "@/components/Toast"
 import { useSearch } from "@/contexts/SearchContext"
+import { PageAccessControl } from "@/components/PageAccessControl"
 
 interface Note {
   id: number
@@ -92,8 +93,31 @@ export default function Home() {
     return false
   }
 
+  // 检查用户是否被封禁
+  const checkUserBanned = async () => {
+    try {
+      const userStatusResponse = await fetch('/api/user/status')
+      if (userStatusResponse.ok) {
+        const userStatus = await userStatusResponse.json()
+        console.log('用户状态检查结果:', userStatus) // 调试日志
+        return userStatus.isBanned === true
+      } else {
+        console.log('用户状态检查失败，状态码:', userStatusResponse.status)
+      }
+    } catch (error) {
+      console.error('检查用户状态失败:', error)
+    }
+    return false
+  }
+
   // 获取公告
   const fetchAnnouncements = async () => {
+    // 检查用户是否被封禁
+    const isBanned = await checkUserBanned()
+    if (isBanned) {
+      return // 如果被封禁，不调用API
+    }
+
     try {
       const response = await fetch('/api/announcements')
       if (response.ok) {
@@ -109,6 +133,13 @@ export default function Home() {
 
   // 获取所有便签
   const fetchNotes = async () => {
+    // 检查用户是否被封禁
+    const isBanned = await checkUserBanned()
+    if (isBanned) {
+      setLoading(false)
+      return // 如果被封禁，不调用API
+    }
+
     try {
       setError(null)
       const response = await fetch('/api/notes')
@@ -137,6 +168,12 @@ export default function Home() {
 
   // 获取所有标签
   const fetchTags = async () => {
+    // 检查用户是否被封禁
+    const isBanned = await checkUserBanned()
+    if (isBanned) {
+      return // 如果被封禁，不调用API
+    }
+
     try {
       const response = await fetch('/api/tags')
       if (response.ok) {
@@ -158,7 +195,7 @@ export default function Home() {
           return // 如果在维护模式，不继续加载
         }
 
-        // 如果不在维护模式，正常加载数据
+        // 加载数据（各个函数内部会检查用户是否被封禁）
         fetchNotes()
         fetchTags()
         fetchAnnouncements()
@@ -394,36 +431,34 @@ export default function Home() {
 
 
 
-  if (loading) {
-    return (
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 min-h-screen">
-        <div className="flex items-center justify-center h-64">
-          <div className="text-muted-foreground">加载中...</div>
-        </div>
-      </div>
-    )
-  }
-
-  if (error) {
-    return (
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 min-h-screen">
-        <div className="flex flex-col items-center justify-center h-64 space-y-4">
-          <div className="text-destructive">{error}</div>
-          <Button onClick={() => {
-            setLoading(true)
-            fetchNotes()
-            fetchTags()
-            fetchAnnouncements()
-          }}>
-            重试
-          </Button>
-        </div>
-      </div>
-    )
-  }
-
   return (
     <AuthGuard>
+      <PageAccessControl allowedForBanned={true} showBannedAlert={true}>
+        {loading && (
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 min-h-screen">
+            <div className="flex items-center justify-center h-64">
+              <div className="text-muted-foreground">加载中...</div>
+            </div>
+          </div>
+        )}
+
+        {error && !loading && (
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 min-h-screen">
+            <div className="flex flex-col items-center justify-center h-64 space-y-4">
+              <div className="text-destructive">{error}</div>
+              <Button onClick={() => {
+                setLoading(true)
+                fetchNotes()
+                fetchTags()
+                fetchAnnouncements()
+              }}>
+                重试
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {!loading && !error && (
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 min-h-screen custom-scrollbar">
         <div className="max-w-7xl mx-auto">
         {/* 头部 */}
@@ -520,6 +555,8 @@ export default function Home() {
         />
         </div>
       </div>
+        )}
+      </PageAccessControl>
     </AuthGuard>
   )
 }

@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useToast, ToastContainer } from "@/components/Toast"
 import { ArrowLeft, User, Palette, Bell, Shield, Database } from "lucide-react"
 import { AuthGuard } from "@/components/AuthGuard"
+import { PageAccessControl } from "@/components/PageAccessControl"
 import { PersonalPreferences } from "@/components/settings/PersonalPreferences"
 import { NoteSettings } from "@/components/settings/NoteSettings"
 import { NotificationSettings } from "@/components/settings/NotificationSettings"
@@ -45,7 +46,8 @@ export default function SettingsPage() {
 
   return (
     <AuthGuard>
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 min-h-screen">
+      <PageAccessControl allowedForBanned={false} showBannedAlert={false}>
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 min-h-screen">
         <div className="max-w-6xl mx-auto">
           {/* 页面标题和返回按钮 */}
           <div className="mb-6 sm:mb-8">
@@ -117,7 +119,8 @@ export default function SettingsPage() {
         </div>
 
         <ToastContainer toasts={toasts} onRemove={removeToast} />
-      </div>
+        </div>
+      </PageAccessControl>
     </AuthGuard>
   )
 }

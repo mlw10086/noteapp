@@ -64,6 +64,8 @@ export const authOptions: NextAuthOptions = {
         // 使用 setTimeout 异步记录，避免阻塞登录流程
         setTimeout(async () => {
           try {
+            // 注意：在这个回调中我们无法直接获取请求对象
+            // IP地址和用户代理将在中间件中处理
             await recordLoginHistory(parseInt(user.id), true)
           } catch (error) {
             console.error('记录登录历史失败:', error)

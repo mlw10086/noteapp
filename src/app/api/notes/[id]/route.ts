@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { withAuth } from '@/lib/auth-middleware'
+import { withAuth, withPublishAuth } from '@/lib/auth-middleware'
 
 // GET - 获取单个便签
 export async function GET(
@@ -49,7 +49,7 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  return withAuth(request, async (request, userId) => {
+  return withPublishAuth(request, async (request, userId) => {
     try {
       const { id: idParam } = await params
       const id = parseInt(idParam)

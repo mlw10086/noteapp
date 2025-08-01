@@ -22,6 +22,13 @@ model User {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
+  // 权限控制字段
+  status        String    @default("active") // active, banned, under_observation
+  bannedUntil   DateTime? @map("banned_until") // 封禁到期时间，null表示永久封禁
+  bannedReason  String?   @map("banned_reason") // 封禁原因
+  bannedIps     String[]  @map("banned_ips") // 被封禁的IP地址列表
+  lastIpAddress String?   @map("last_ip_address") // 最后登录IP地址
+
   // 关联便签
   notes     Note[]
   // 关联用户设置

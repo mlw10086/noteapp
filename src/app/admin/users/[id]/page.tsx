@@ -5,9 +5,10 @@ import { useParams } from 'next/navigation'
 import { AdminLayout } from '@/components/admin/AdminLayout'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { 
+import {
   Table,
   TableBody,
   TableCell,
@@ -15,17 +16,23 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { 
-  User, 
-  Mail, 
-  Calendar, 
-  FileText, 
-  Activity, 
+import { UserPermissionDialog } from '@/components/admin/UserPermissionDialog'
+import {
+  User,
+  Mail,
+  Calendar,
+  FileText,
+  Activity,
   Settings,
   MapPin,
   Monitor,
   CheckCircle,
-  XCircle
+  XCircle,
+  Shield,
+  ShieldAlert,
+  ShieldCheck,
+  Eye,
+  Ban
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { zhCN } from 'date-fns/locale'
@@ -37,6 +44,11 @@ interface UserDetail {
   avatar?: string
   createdAt: string
   updatedAt: string
+  status: string
+  bannedUntil?: string | null
+  bannedReason?: string | null
+  bannedIps?: string[]
+  lastIpAddress?: string | null
   settings?: any
   loginHistory: LoginHistory[]
   _count: {
@@ -63,10 +75,11 @@ interface UserStats {
 export default function UserDetailPage() {
   const params = useParams()
   const userId = params.id as string
-  
+
   const [user, setUser] = useState<UserDetail | null>(null)
   const [stats, setStats] = useState<UserStats | null>(null)
   const [loading, setLoading] = useState(true)
+  const [permissionDialogOpen, setPermissionDialogOpen] = useState(false)
 
   useEffect(() => {
     if (userId) {
@@ -109,6 +122,61 @@ export default function UserDetailPage() {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
   }
 
+  const handlePermissionUpdate = async (userId: number, action: string, data?: any) => {
+    try {
+      const response = await fetch(`/api/admin/users/${userId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ action, ...data }),
+      })
+
+      if (response.ok) {
+        // 重新获取用户数据
+        await fetchUserDetail()
+      } else {
+        const errorData = await response.json()
+        console.error('权限更新失败:', errorData.error)
+      }
+    } catch (error) {
+      console.error('权限更新错误:', error)
+    }
+  }
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'active':
+        return (
+          <Badge variant="default" className="bg-green-100 text-green-800">
+            <ShieldCheck className="h-3 w-3 mr-1" />
+            正常
+          </Badge>
+        )
+      case 'banned':
+        return (
+          <Badge variant="destructive">
+            <Ban className="h-3 w-3 mr-1" />
+            已封禁
+          </Badge>
+        )
+      case 'under_observation':
+        return (
+          <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
+            <Eye className="h-3 w-3 mr-1" />
+            观察中
+          </Badge>
+        )
+      default:
+        return (
+          <Badge variant="outline">
+            <Shield className="h-3 w-3 mr-1" />
+            未知
+          </Badge>
+        )
+    }
+  }
+
   if (loading) {
     return (
       <AdminLayout title="用户详情" description="查看用户详细信息">
@@ -141,10 +209,20 @@ export default function UserDetailPage() {
         {/* 用户基本信息 */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center">
-              <User className="h-5 w-5 mr-2" />
-              基本信息
-            </CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center">
+                <User className="h-5 w-5 mr-2" />
+                基本信息
+              </CardTitle>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPermissionDialogOpen(true)}
+              >
+                <ShieldAlert className="h-4 w-4 mr-2" />
+                权限管理
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
             <div className="flex items-start space-x-6">
@@ -154,7 +232,7 @@ export default function UserDetailPage() {
                   {getInitials(user.name)}
                 </AvatarFallback>
               </Avatar>
-              
+
               <div className="flex-1 space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
@@ -179,7 +257,61 @@ export default function UserDetailPage() {
                       <p>{format(new Date(user.createdAt), 'yyyy年MM月dd日 HH:mm', { locale: zhCN })}</p>
                     </div>
                   </div>
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">账户状态</label>
+                    <div className="flex items-center mt-1">
+                      {getStatusBadge(user.status)}
+                    </div>
+                  </div>
+                  {user.lastIpAddress && (
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground">最后登录IP</label>
+                      <p className="font-mono text-sm">{user.lastIpAddress}</p>
+                    </div>
+                  )}
                 </div>
+
+                {/* 封禁信息显示 */}
+                {user.status === 'banned' && (
+                  <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                    <p className="text-sm text-red-800">
+                      <strong>封禁原因:</strong> {user.bannedReason || '未指定'}
+                    </p>
+                    {user.bannedUntil && (
+                      <p className="text-sm text-red-800 mt-1">
+                        <strong>封禁到期:</strong> {new Date(user.bannedUntil).toLocaleString('zh-CN')}
+                      </p>
+                    )}
+                    {!user.bannedUntil && (
+                      <p className="text-sm text-red-800 mt-1">
+                        <strong>封禁类型:</strong> 永久封禁
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {/* 观察模式信息 */}
+                {user.status === 'under_observation' && (
+                  <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <p className="text-sm text-yellow-800">
+                      该用户当前处于观察模式，可以访问系统但无法发布新内容。
+                    </p>
+                  </div>
+                )}
+
+                {/* 封禁IP列表 */}
+                {user.bannedIps && user.bannedIps.length > 0 && (
+                  <div className="p-3 bg-gray-50 border rounded-lg">
+                    <label className="text-sm font-medium text-muted-foreground">封禁IP地址</label>
+                    <div className="mt-2 space-y-1">
+                      {user.bannedIps.map((ip, index) => (
+                        <Badge key={index} variant="secondary" className="mr-2">
+                          {ip}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </CardContent>
@@ -347,6 +479,14 @@ export default function UserDetailPage() {
             </Card>
           </TabsContent>
         </Tabs>
+
+        {/* 权限管理对话框 */}
+        <UserPermissionDialog
+          user={user}
+          isOpen={permissionDialogOpen}
+          onClose={() => setPermissionDialogOpen(false)}
+          onUpdate={handlePermissionUpdate}
+        />
       </div>
     </AdminLayout>
   )

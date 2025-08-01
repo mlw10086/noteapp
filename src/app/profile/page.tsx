@@ -11,6 +11,8 @@ import { useToast, ToastContainer } from "@/components/Toast"
 import { UserAvatar } from "@/components/UserAvatar"
 import { EditNameDialog } from "@/components/EditNameDialog"
 import { ChangePasswordDialog } from "@/components/ChangePasswordDialog"
+import { PageAccessControl } from "@/components/PageAccessControl"
+import { useUserStatus } from "@/hooks/useUserStatus"
 import { User, Mail, Calendar, LogOut, Settings } from "lucide-react"
 
 interface UserStats {
@@ -24,6 +26,7 @@ export default function ProfilePage() {
   const { data: session, status } = useSession()
   const router = useRouter()
   const { toasts, toast, removeToast } = useToast()
+  const { isBanned, isUnderObservation } = useUserStatus()
   const [userName, setUserName] = useState("")
   const [userStats, setUserStats] = useState<UserStats | null>(null)
   const [statsLoading, setStatsLoading] = useState(true)
@@ -109,7 +112,8 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 min-h-screen">
+    <PageAccessControl allowedForBanned={true} showBannedAlert={true}>
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 min-h-screen">
       <div className="max-w-4xl mx-auto">
         {/* 页面标题 */}
         <div className="mb-6 sm:mb-8">
@@ -126,6 +130,7 @@ export default function ProfilePage() {
               onClick={() => router.push('/settings')}
               variant="outline"
               className="w-full sm:w-auto"
+              disabled={isBanned}
             >
               <Settings className="h-4 w-4 mr-2" />
               个人设置
@@ -160,6 +165,7 @@ export default function ProfilePage() {
                       onNameUpdate={handleNameUpdate}
                       onError={handleError}
                       onSuccess={handleSuccess}
+                      disabled={isBanned}
                     />
                   </div>
                   <p className="text-sm text-muted-foreground">用户名</p>
@@ -222,6 +228,7 @@ export default function ProfilePage() {
                 <ChangePasswordDialog
                   onError={handleError}
                   onSuccess={handleSuccess}
+                  disabled={isBanned}
                 />
                 <Button
                   variant="destructive"
@@ -282,6 +289,7 @@ export default function ProfilePage() {
       </div>
 
       <ToastContainer toasts={toasts} onRemove={removeToast} />
-    </div>
+      </div>
+    </PageAccessControl>
   )
 }

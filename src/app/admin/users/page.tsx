@@ -22,15 +22,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { 
-  Search, 
-  Users, 
-  Eye, 
-  ChevronLeft, 
+import {
+  Search,
+  Users,
+  Eye,
+  ChevronLeft,
   ChevronRight,
   Calendar,
   FileText,
-  Activity
+  Activity,
+  Shield,
+  ShieldCheck,
+  ShieldAlert,
+  Ban
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { zhCN } from 'date-fns/locale'
@@ -42,6 +46,11 @@ interface User {
   avatar?: string
   createdAt: string
   updatedAt: string
+  status: string
+  bannedUntil?: string | null
+  bannedReason?: string | null
+  bannedIps?: string[]
+  lastIpAddress?: string | null
   _count: {
     notes: number
     loginHistory: number
@@ -121,6 +130,39 @@ export default function UsersPage() {
       .join('')
       .toUpperCase()
       .slice(0, 2)
+  }
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'active':
+        return (
+          <Badge variant="default" className="bg-green-100 text-green-800">
+            <ShieldCheck className="h-3 w-3 mr-1" />
+            正常
+          </Badge>
+        )
+      case 'banned':
+        return (
+          <Badge variant="destructive">
+            <Ban className="h-3 w-3 mr-1" />
+            已封禁
+          </Badge>
+        )
+      case 'under_observation':
+        return (
+          <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
+            <Eye className="h-3 w-3 mr-1" />
+            观察中
+          </Badge>
+        )
+      default:
+        return (
+          <Badge variant="outline">
+            <Shield className="h-3 w-3 mr-1" />
+            未知
+          </Badge>
+        )
+    }
   }
 
   return (
@@ -228,15 +270,16 @@ export default function UsersPage() {
                     <TableHeader>
                       <TableRow>
                         <TableHead>用户</TableHead>
-                        <TableHead 
+                        <TableHead
                           className="cursor-pointer hover:bg-muted/50"
                           onClick={() => handleSort('email')}
                         >
                           邮箱
                         </TableHead>
+                        <TableHead>状态</TableHead>
                         <TableHead>便签数</TableHead>
                         <TableHead>登录次数</TableHead>
-                        <TableHead 
+                        <TableHead
                           className="cursor-pointer hover:bg-muted/50"
                           onClick={() => handleSort('createdAt')}
                         >
@@ -248,7 +291,7 @@ export default function UsersPage() {
                     <TableBody>
                       {users.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={6} className="text-center py-12">
+                          <TableCell colSpan={7} className="text-center py-12">
                             <div className="flex flex-col items-center space-y-4">
                               <div className="rounded-full bg-muted p-4">
                                 <Users className="h-8 w-8 text-muted-foreground" />
@@ -282,6 +325,9 @@ export default function UsersPage() {
                               </div>
                             </TableCell>
                             <TableCell>{user.email}</TableCell>
+                            <TableCell>
+                              {getStatusBadge(user.status)}
+                            </TableCell>
                             <TableCell>
                               <Badge variant="secondary">
                                 {user._count.notes}

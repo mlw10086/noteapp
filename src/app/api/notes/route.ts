@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { withAuth } from '@/lib/auth-middleware'
+import { withAuth, withPublishAuth } from '@/lib/auth-middleware'
 
 // GET - 获取当前用户的所有便签
 export async function GET(request: NextRequest) {
@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
 
 // POST - 创建新便签
 export async function POST(request: NextRequest) {
-  return withAuth(request, async (request, userId) => {
+  return withPublishAuth(request, async (request, userId) => {
     try {
       const body = await request.json()
       const { title, content, color, tags, status, publishAt } = body
