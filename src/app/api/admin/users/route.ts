@@ -42,6 +42,11 @@ export async function GET(request: NextRequest) {
             avatar: true,
             createdAt: true,
             updatedAt: true,
+            status: true,
+            bannedUntil: true,
+            bannedReason: true,
+            bannedIps: true,
+            lastIpAddress: true,
             _count: {
               select: {
                 notes: true,

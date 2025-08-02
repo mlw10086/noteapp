@@ -5,6 +5,8 @@ import { Navbar } from "@/components/Navbar"
 import { SessionProvider } from "@/components/SessionProvider"
 import { SearchProvider } from "@/contexts/SearchContext"
 import { ThemeProvider } from "@/components/ThemeProvider"
+import { SiteSettingsProvider } from "@/contexts/SiteSettingsContext"
+import { DynamicTitle } from "@/components/DynamicTitle"
 
 interface ConditionalLayoutProps {
   children: React.ReactNode
@@ -26,11 +28,14 @@ export function ConditionalLayout({ children }: ConditionalLayoutProps) {
         enableSystem
         disableTransitionOnChange
       >
-        {children}
+        <SiteSettingsProvider>
+          <DynamicTitle />
+          {children}
+        </SiteSettingsProvider>
       </ThemeProvider>
     )
   }
-  
+
   // 用户端：包含完整的用户端布局
   return (
     <ThemeProvider
@@ -39,12 +44,15 @@ export function ConditionalLayout({ children }: ConditionalLayoutProps) {
       enableSystem
       disableTransitionOnChange
     >
-      <SessionProvider>
-        <SearchProvider>
-          <Navbar />
-          {children}
-        </SearchProvider>
-      </SessionProvider>
+      <SiteSettingsProvider>
+        <SessionProvider>
+          <SearchProvider>
+            <DynamicTitle />
+            <Navbar />
+            {children}
+          </SearchProvider>
+        </SessionProvider>
+      </SiteSettingsProvider>
     </ThemeProvider>
   )
 }

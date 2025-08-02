@@ -20,29 +20,24 @@ import { NavbarSearch } from "@/components/NavbarSearch"
 import { ThemeToggle } from "@/components/ThemeToggle"
 import { LanguageToggle } from "@/components/LanguageToggle"
 import { NotificationCenter } from "@/components/NotificationCenter"
+import { useSiteSettings } from "@/contexts/SiteSettingsContext"
+import { SiteName } from "@/components/SiteName"
 
 export function Navbar() {
   const pathname = usePathname()
   const { data: session, status } = useSession()
   const t = useTranslations()
-  const [registrationEnabled, setRegistrationEnabled] = useState(true)
 
-  // 获取公开设置
-  useEffect(() => {
-    const fetchPublicSettings = async () => {
-      try {
-        const response = await fetch('/api/settings/public')
-        if (response.ok) {
-          const settings = await response.json()
-          setRegistrationEnabled(settings.site_registration_enabled !== false)
-        }
-      } catch (error) {
-        console.error('获取公开设置失败:', error)
-        // 默认允许注册
-      }
-    }
-    fetchPublicSettings()
-  }, [])
+  // 安全地获取站点设置，避免 SSR 错误
+  let registrationEnabled = true
+
+  try {
+    const { settings } = useSiteSettings()
+    registrationEnabled = settings.allow_registration !== false
+  } catch (error) {
+    // 在 SSR 期间或 Context 未初始化时使用默认值
+    console.debug('使用默认站点设置')
+  }
 
   const navItems = [
     {
@@ -71,7 +66,7 @@ export function Navbar() {
           {/* Logo/Brand */}
           <div className="flex items-center gap-2">
             <Home className="h-6 w-6 text-primary" />
-            <span className="text-xl font-bold text-foreground">便签系统</span>
+            <SiteName className="text-xl font-bold text-foreground" />
           </div>
 
           {/* 中间区域：搜索和导航链接 */}

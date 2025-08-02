@@ -5,16 +5,17 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
-import { 
-  Shield, 
-  Users, 
-  Settings, 
-  MessageSquare, 
-  BarChart3, 
+import {
+  Shield,
+  Users,
+  Settings,
+  MessageSquare,
+  BarChart3,
   Menu,
   X,
   Home,
-  Wrench
+  Wrench,
+  Bell
 } from 'lucide-react'
 
 interface AdminSidebarProps {
@@ -31,6 +32,11 @@ const navigation = [
     name: '用户管理',
     href: '/admin/users',
     icon: Users,
+  },
+  {
+    name: '通知管理',
+    href: '/admin/notifications',
+    icon: Bell,
   },
   {
     name: '站点设置',

@@ -16,8 +16,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "便签系统",
-  description: "现代化的便签管理系统",
+  title: "便签系统", // 这将被 DynamicTitle 组件动态更新
+  description: "现代化的便签管理系统", // 这将被 DynamicTitle 组件动态更新
 };
 
 export default async function RootLayout({

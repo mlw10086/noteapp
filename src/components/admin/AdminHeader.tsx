@@ -2,7 +2,7 @@
 
 import { useAdminAuth } from '@/hooks/useAdminAuth'
 import { Button } from '@/components/ui/button'
-import { 
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -13,6 +13,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { LogOut, Settings, User, ExternalLink } from 'lucide-react'
 import Link from 'next/link'
+import { BeijingTime } from './BeijingTime'
 
 interface AdminHeaderProps {
   title?: string
@@ -38,7 +39,7 @@ export function AdminHeader({ title, description }: AdminHeaderProps) {
   return (
     <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
       <div className="px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center py-4">
+        <div className="flex items-center py-4">
           {/* 标题区域 */}
           <div className="flex-1 min-w-0">
             {title && (
@@ -53,6 +54,11 @@ export function AdminHeader({ title, description }: AdminHeaderProps) {
                 )}
               </div>
             )}
+          </div>
+
+          {/* 中间时间显示区域 */}
+          <div className="flex-shrink-0 mx-2 md:mx-4">
+            <BeijingTime />
           </div>
 
           {/* 右侧操作区域 */}

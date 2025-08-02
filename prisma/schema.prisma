@@ -149,6 +149,8 @@ model Admin {
   loginHistory AdminLoginHistory[]
   // 关联创建的公告
   announcements Announcement[]
+  // 关联通知发送日志
+  notificationLogs AdminNotificationLog[]
 
   @@map("admins")
 }
@@ -239,6 +241,24 @@ model UserNotification {
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("user_notifications")
+}
+
+// 管理员通知发送日志表
+model AdminNotificationLog {
+  id             Int      @id @default(autoincrement())
+  adminId        Int      @map("admin_id")
+  title          String
+  content        String
+  type           String   // system, announcement, maintenance, feature
+  sendingType    String   @map("sending_type") // broadcast, single
+  recipientCount Int      @map("recipient_count")
+  recipientIds   Int[]    @map("recipient_ids")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  // 关联管理员
+  admin          Admin    @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@map("admin_notification_logs")
 }
 
 // 便签邀请表

@@ -100,6 +100,14 @@ export default function SettingsPage() {
         setMessage({ type: 'success', text: '设置保存成功' })
         fetchSettings() // 重新获取最新设置
 
+        // 通知前端刷新缓存
+        if (typeof window !== 'undefined') {
+          // 使用 localStorage 事件通知其他标签页
+          localStorage.setItem('site_settings_updated', Date.now().toString())
+          // 立即移除，只是为了触发事件
+          localStorage.removeItem('site_settings_updated')
+        }
+
         // 3秒后清除Alert消息
         setTimeout(() => {
           setMessage(null)
