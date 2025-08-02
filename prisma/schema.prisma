@@ -37,6 +37,14 @@ model User {
   loginHistory LoginHistory[]
   // 关联公告关闭记录
   dismissedAnnouncements UserAnnouncementDismissal[]
+  // 关联通知
+  notifications UserNotification[]
+  // 关联发送的邀请
+  sentInvitations NoteInvitation[] @relation("InvitationSender")
+  // 关联接收的邀请
+  receivedInvitations NoteInvitation[] @relation("InvitationReceiver")
+  // 关联协作的便签
+  collaborations NoteCollaborator[]
 
   @@map("users")
 }
@@ -55,6 +63,11 @@ model Note {
   // 关联用户
   userId      Int       @map("user_id")
   user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // 关联协作者
+  collaborators NoteCollaborator[]
+  // 关联邀请
+  invitations NoteInvitation[]
 
   @@map("notes")
 }
@@ -208,4 +221,64 @@ model UserAnnouncementDismissal {
 
   @@unique([userId, announcementId])
   @@map("user_announcement_dismissals")
+}
+
+// 用户通知表
+model UserNotification {
+  id          Int      @id @default(autoincrement())
+  userId      Int      @map("user_id")
+  type        String   // invitation, system, reminder, collaboration
+  title       String
+  content     String
+  data        String?  // JSON 格式的额外数据
+  isRead      Boolean  @default(false) @map("is_read")
+  createdAt   DateTime @default(now()) @map("created_at")
+  readAt      DateTime? @map("read_at")
+
+  // 关联用户
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_notifications")
+}
+
+// 便签邀请表
+model NoteInvitation {
+  id          Int      @id @default(autoincrement())
+  noteId      Int      @map("note_id")
+  senderId    Int      @map("sender_id")
+  receiverId  Int      @map("receiver_id")
+  permission  String   @default("edit") // view, edit
+  status      String   @default("pending") // pending, accepted, rejected, expired
+  message     String?  // 邀请消息
+  expiresAt   DateTime? @map("expires_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+  respondedAt DateTime? @map("responded_at")
+
+  // 关联便签
+  note        Note     @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  // 关联发送者
+  sender      User     @relation("InvitationSender", fields: [senderId], references: [id], onDelete: Cascade)
+  // 关联接收者
+  receiver    User     @relation("InvitationReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  @@unique([noteId, receiverId])
+  @@map("note_invitations")
+}
+
+// 便签协作者表
+model NoteCollaborator {
+  id          Int      @id @default(autoincrement())
+  noteId      Int      @map("note_id")
+  userId      Int      @map("user_id")
+  permission  String   @default("edit") // view, edit
+  joinedAt    DateTime @default(now()) @map("joined_at")
+  lastActiveAt DateTime? @map("last_active_at")
+
+  // 关联便签
+  note        Note     @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  // 关联用户
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([noteId, userId])
+  @@map("note_collaborators")
 }

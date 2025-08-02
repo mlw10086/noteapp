@@ -3,6 +3,7 @@
 import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import { useEffect, ReactNode, useState, useRef } from "react"
+import { PageLoading } from "@/components/ui/loading"
 
 interface AuthGuardProps {
   children: ReactNode
@@ -35,14 +36,9 @@ export function AuthGuard({ children, fallback, skipRedirect = false }: AuthGuar
   if (status === "loading" || isRedirecting) {
     return (
       fallback || (
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 min-h-screen">
-          <div className="flex items-center justify-center h-64">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-            <div className="text-muted-foreground mt-2">
-              {isRedirecting ? '正在跳转到登录页面...' : '加载中...'}
-            </div>
-          </div>
-        </div>
+        <PageLoading
+          message={isRedirecting ? '正在跳转到登录页面...' : '正在验证身份...'}
+        />
       )
     )
   }

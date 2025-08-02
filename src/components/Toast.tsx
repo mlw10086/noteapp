@@ -150,12 +150,12 @@ export function useToast() {
   }
 
   const toast = {
-    success: (title: string, description?: string) => 
-      addToast({ title, description, variant: 'success' }),
-    error: (title: string, description?: string) => 
-      addToast({ title, description, variant: 'error' }),
-    default: (title: string, description?: string) => 
-      addToast({ title, description, variant: 'default' })
+    success: (title: string, description?: string, duration?: number) =>
+      addToast({ title, description, variant: 'success', duration }),
+    error: (title: string, description?: string, duration?: number) =>
+      addToast({ title, description, variant: 'error', duration }),
+    default: (title: string, description?: string, duration?: number) =>
+      addToast({ title, description, variant: 'default', duration })
   }
 
   return {

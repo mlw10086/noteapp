@@ -19,6 +19,7 @@ import { UserAvatar } from "@/components/UserAvatar"
 import { NavbarSearch } from "@/components/NavbarSearch"
 import { ThemeToggle } from "@/components/ThemeToggle"
 import { LanguageToggle } from "@/components/LanguageToggle"
+import { NotificationCenter } from "@/components/NotificationCenter"
 
 export function Navbar() {
   const pathname = usePathname()
@@ -110,6 +111,9 @@ export function Navbar() {
           <div className="flex items-center gap-2">
             {/* 语言切换按钮 */}
             <LanguageToggle />
+
+            {/* 通知中心 */}
+            {session && <NotificationCenter />}
 
             {/* 主题切换按钮 */}
             {session && <ThemeToggle />}

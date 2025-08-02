@@ -25,6 +25,8 @@ import { AnnouncementModal } from "@/components/AnnouncementModal"
 import { useToast, ToastContainer } from "@/components/Toast"
 import { useSearch } from "@/contexts/SearchContext"
 import { PageAccessControl } from "@/components/PageAccessControl"
+import { NoteInviteDialog } from "@/components/NoteInviteDialog"
+import { PageLoading } from "@/components/ui/loading"
 
 interface Note {
   id: number
@@ -60,6 +62,9 @@ export default function Home() {
   const [announcements, setAnnouncements] = useState<Announcement[]>([])
   const [announcementModalOpen, setAnnouncementModalOpen] = useState(false)
   const [selectedAnnouncement, setSelectedAnnouncement] = useState<Announcement | null>(null)
+  const [collaborateNote, setCollaborateNote] = useState<Note | null>(null)
+  const [collaborateDialogOpen, setCollaborateDialogOpen] = useState(false)
+
   const { toasts, toast, removeToast } = useToast()
   const { searchQuery } = useSearch()
   const t = useTranslations()
@@ -329,6 +334,12 @@ export default function Home() {
     }
   }
 
+  // 协作编辑便签
+  const handleCollaborateNote = (note: Note) => {
+    setCollaborateNote(note)
+    setCollaborateDialogOpen(true)
+  }
+
   // 批量删除便签
   const handleBatchDelete = async () => {
     if (selectedNotes.length === 0) return
@@ -364,10 +375,7 @@ export default function Home() {
     setIsEditorOpen(true)
   }
 
-  // 协作编辑便签
-  const handleCollaborateNote = (note: Note) => {
-    router.push(`/notes/${note.id}/collaborate`)
-  }
+
 
   // 新建便签
   const handleNewNote = () => {
@@ -440,11 +448,7 @@ export default function Home() {
     <AuthGuard>
       <PageAccessControl allowedForBanned={true} showBannedAlert={true}>
         {loading && (
-          <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 min-h-screen">
-            <div className="flex items-center justify-center h-64">
-              <div className="text-muted-foreground">加载中...</div>
-            </div>
-          </div>
+          <PageLoading message="正在加载便签数据..." />
         )}
 
         {error && !loading && (
@@ -559,6 +563,22 @@ export default function Home() {
           onDismiss={handleAnnouncementDismiss}
           initialAnnouncementId={selectedAnnouncement?.id}
         />
+
+        {/* 协作邀请对话框 */}
+        <NoteInviteDialog
+          key={collaborateNote?.id || 'default'}
+          noteId={collaborateNote?.id || 1}
+          noteTitle={collaborateNote?.title || ''}
+          isOwner={true}
+          open={collaborateDialogOpen}
+          onOpenChange={(open) => {
+            setCollaborateDialogOpen(open)
+            if (!open) {
+              setCollaborateNote(null)
+            }
+          }}
+        />
+
         </div>
       </div>
         )}

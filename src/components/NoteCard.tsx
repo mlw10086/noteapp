@@ -135,7 +135,7 @@ export function NoteCard({ note, onEdit, onDelete, onCollaborate, isSelected = f
                   e.stopPropagation()
                   onCollaborate(note)
                 }}
-                title="协作编辑"
+                title="协作管理"
               >
                 <Users className="h-3 w-3" />
               </Button>
