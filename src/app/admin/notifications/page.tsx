@@ -25,6 +25,17 @@ import {
   Plus
 } from 'lucide-react'
 import { useToast, ToastContainer } from '@/components/Toast'
+import { DeleteConfirmDialog } from '@/components/DeleteConfirmDialog'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
 interface User {
   id: number
@@ -71,6 +82,15 @@ export default function AdminNotificationsPage() {
   const [sentNotifications, setSentNotifications] = useState<SentNotification[]>([])
   const [templates, setTemplates] = useState<NotificationTemplate[]>([])
   const [loading, setLoading] = useState(false)
+
+  // 批量删除状态
+  const [selectedLogs, setSelectedLogs] = useState<number[]>([])
+  const [isDeleting, setIsDeleting] = useState(false)
+
+  // 确认删除弹窗状态
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
+  const [batchDeleteConfirmOpen, setBatchDeleteConfirmOpen] = useState(false)
+  const [logToDelete, setLogToDelete] = useState<number | null>(null)
   
   // 搜索和筛选
   const [userSearch, setUserSearch] = useState('')
@@ -230,6 +250,99 @@ export default function AdminNotificationsPage() {
   const handleUserSearch = () => {
     setCurrentPage(1)
     fetchUsers(1, userSearch)
+  }
+
+  // 打开单个删除确认弹窗
+  const handleDeleteClick = (logId: number) => {
+    setLogToDelete(logId)
+    setDeleteConfirmOpen(true)
+  }
+
+  // 确认删除发送历史记录
+  const confirmDeleteNotificationHistory = async () => {
+    if (!logToDelete) return
+
+    try {
+      const response = await fetch(`/api/admin/notifications/sent/${logToDelete}`, {
+        method: 'DELETE'
+      })
+
+      if (response.ok) {
+        toast.success('删除成功', '发送记录已删除')
+        // 刷新发送历史
+        await fetchSentNotifications()
+      } else {
+        const error = await response.json()
+        toast.error('删除失败', error.error || '删除发送记录失败')
+      }
+    } catch (error) {
+      console.error('删除发送记录失败:', error)
+      toast.error('删除失败', '网络连接失败')
+    } finally {
+      setDeleteConfirmOpen(false)
+      setLogToDelete(null)
+    }
+  }
+
+  // 打开批量删除确认弹窗
+  const handleBatchDeleteClick = () => {
+    if (selectedLogs.length === 0) {
+      toast.error('请选择要删除的记录')
+      return
+    }
+    setBatchDeleteConfirmOpen(true)
+  }
+
+  // 确认批量删除发送历史记录
+  const confirmBatchDeleteNotificationHistory = async () => {
+    if (selectedLogs.length === 0) return
+
+    try {
+      setIsDeleting(true)
+
+      const response = await fetch('/api/admin/notifications/sent/batch-delete', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ logIds: selectedLogs })
+      })
+
+      if (response.ok) {
+        const result = await response.json()
+        toast.success('批量删除成功', `已删除 ${result.deletedCount} 条记录`)
+        setSelectedLogs([])
+        // 刷新发送历史
+        await fetchSentNotifications()
+      } else {
+        const error = await response.json()
+        toast.error('批量删除失败', error.error || '批量删除发送记录失败')
+      }
+    } catch (error) {
+      console.error('批量删除发送记录失败:', error)
+      toast.error('批量删除失败', '网络连接失败')
+    } finally {
+      setIsDeleting(false)
+      setBatchDeleteConfirmOpen(false)
+    }
+  }
+
+  // 切换记录选择状态
+  const toggleLogSelection = (logId: number) => {
+    setSelectedLogs(prev =>
+      prev.includes(logId)
+        ? prev.filter(id => id !== logId)
+        : [...prev, logId]
+    )
+  }
+
+  // 全选/取消全选
+  const toggleSelectAll = () => {
+    if (selectedLogs.length === sentNotifications.length) {
+      setSelectedLogs([])
+    } else {
+      setSelectedLogs(sentNotifications.map(log => log.id))
+    }
   }
 
   const filteredUsers = users.filter(user => 
@@ -463,13 +576,51 @@ export default function AdminNotificationsPage() {
                 <CardDescription>
                   查看已发送的通知记录
                 </CardDescription>
+                {sentNotifications.length > 0 && (
+                  <div className="flex items-center gap-2 mt-4">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={toggleSelectAll}
+                    >
+                      <CheckCircle className="h-4 w-4 mr-2" />
+                      {selectedLogs.length === sentNotifications.length ? '取消全选' : '全选'}
+                    </Button>
+                    {selectedLogs.length > 0 && (
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={handleBatchDeleteClick}
+                        disabled={isDeleting}
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        {isDeleting ? '删除中...' : `删除选中 (${selectedLogs.length})`}
+                      </Button>
+                    )}
+                  </div>
+                )}
               </CardHeader>
               <CardContent>
                 <ScrollArea className="h-96">
                   <div className="space-y-4">
                     {sentNotifications.map(notification => (
-                      <div key={notification.id} className="p-4 border rounded-lg">
-                        <div className="flex items-start justify-between">
+                      <div
+                        key={notification.id}
+                        className={`p-4 border rounded-lg transition-colors ${
+                          selectedLogs.includes(notification.id)
+                            ? 'border-primary bg-primary/5'
+                            : 'hover:bg-muted/50'
+                        }`}
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className="flex items-center pt-1">
+                            <input
+                              type="checkbox"
+                              checked={selectedLogs.includes(notification.id)}
+                              onChange={() => toggleLogSelection(notification.id)}
+                              className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
+                            />
+                          </div>
                           <div className="flex-1">
                             <h3 className="font-medium">{notification.title}</h3>
                             <p className="text-sm text-muted-foreground mt-1">
@@ -481,9 +632,19 @@ export default function AdminNotificationsPage() {
                               <span>时间: {new Date(notification.createdAt).toLocaleString('zh-CN')}</span>
                             </div>
                           </div>
-                          <Badge variant="outline">
-                            {notification.type}
-                          </Badge>
+                          <div className="flex items-center gap-2">
+                            <Badge variant="outline">
+                              {notification.type}
+                            </Badge>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleDeleteClick(notification.id)}
+                              className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     ))}
@@ -544,6 +705,59 @@ export default function AdminNotificationsPage() {
 
       {/* Toast 容器 */}
       <ToastContainer toasts={toasts} onRemove={removeToast} />
+
+      {/* 单个删除确认弹窗 */}
+      <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <span className="text-destructive">⚠️</span>
+              确认删除
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-base">
+              确定要删除这条发送记录吗？此操作无法撤销。
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setDeleteConfirmOpen(false)}>
+              取消
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDeleteNotificationHistory}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              删除
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* 批量删除确认弹窗 */}
+      <AlertDialog open={batchDeleteConfirmOpen} onOpenChange={setBatchDeleteConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <span className="text-destructive">⚠️</span>
+              确认批量删除
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-base">
+              确定要删除选中的 {selectedLogs.length} 条发送记录吗？此操作无法撤销。
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setBatchDeleteConfirmOpen(false)}>
+              取消
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmBatchDeleteNotificationHistory}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={isDeleting}
+            >
+              {isDeleting ? '删除中...' : '删除全部'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AdminLayout>
   )
 }
