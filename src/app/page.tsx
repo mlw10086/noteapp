@@ -364,6 +364,11 @@ export default function Home() {
     setIsEditorOpen(true)
   }
 
+  // 协作编辑便签
+  const handleCollaborateNote = (note: Note) => {
+    router.push(`/notes/${note.id}/collaborate`)
+  }
+
   // 新建便签
   const handleNewNote = () => {
     setEditingNote(null)
@@ -506,6 +511,7 @@ export default function Home() {
           notes={filteredNotes}
           onEdit={handleEditNote}
           onDelete={handleDeleteNote}
+          onCollaborate={handleCollaborateNote}
           searchQuery={searchQuery}
           selectedNotes={selectedNotes}
           onToggleSelection={toggleNoteSelection}

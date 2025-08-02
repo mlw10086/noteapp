@@ -258,8 +258,26 @@ export function NoteEditor({ note, isOpen, onClose, onSave }: NoteEditorProps) {
                 className="min-h-[150px] sm:min-h-[200px] resize-none custom-scrollbar"
               />
             )}
+
+            {/* 状态栏 - 显示在编辑器下方 */}
+            <div className="flex items-center justify-between pt-2 text-sm text-muted-foreground">
+              <div className="flex items-center gap-4">
+                <span>字数: {content.length}</span>
+                {title.trim() && (
+                  <span>标题: {title.trim().length} 字符</span>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                {isMarkdownMode && (
+                  <span className="flex items-center gap-1">
+                    <Code className="h-3 w-3" />
+                    Markdown
+                  </span>
+                )}
+              </div>
+            </div>
           </div>
-          
+
           <div>
             <label className="text-sm font-medium mb-2 block">颜色</label>
             <div className="flex gap-2 flex-wrap">

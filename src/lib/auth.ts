@@ -6,7 +6,9 @@ import { recordLoginHistory } from "@/lib/login-history"
 
 export const authOptions: NextAuthOptions = {
   providers: [
+    // 普通用户登录
     CredentialsProvider({
+      id: "credentials",
       name: "credentials",
       credentials: {
         email: { label: "邮箱", type: "email" },
@@ -50,6 +52,60 @@ export const authOptions: NextAuthOptions = {
           email: user.email,
           name: user.name,
           image: user.avatar,
+        }
+      }
+    }),
+    // 管理员登录
+    CredentialsProvider({
+      id: "admin-credentials",
+      name: "admin-credentials",
+      credentials: {
+        email: { label: "邮箱", type: "email" },
+        password: { label: "密码", type: "password" }
+      },
+      async authorize(credentials) {
+        if (!credentials?.email || !credentials?.password) {
+          return null
+        }
+
+        const admin = await prisma.admin.findUnique({
+          where: {
+            email: credentials.email
+          }
+        })
+
+        if (!admin || !admin.isActive) {
+          return null
+        }
+
+        const isPasswordValid = await bcrypt.compare(
+          credentials.password,
+          admin.password
+        )
+
+        if (!isPasswordValid) {
+          return null
+        }
+
+        // 记录管理员登录历史
+        setTimeout(async () => {
+          try {
+            await prisma.adminLoginHistory.create({
+              data: {
+                adminId: admin.id,
+                success: true
+              }
+            })
+          } catch (error) {
+            console.error('记录管理员登录历史失败:', error)
+          }
+        }, 0)
+
+        return {
+          id: admin.id.toString(),
+          email: admin.email,
+          name: admin.name,
+          image: admin.avatar,
         }
       }
     })

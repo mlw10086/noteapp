@@ -18,13 +18,15 @@ interface MarkdownEditorProps {
   onChange: (value: string) => void
   placeholder?: string
   height?: number
+  readOnly?: boolean
 }
 
-export function MarkdownEditor({ 
-  value, 
-  onChange, 
+export function MarkdownEditor({
+  value,
+  onChange,
   placeholder = "开始编写你的便签...",
-  height = 300 
+  height = 300,
+  readOnly = false
 }: MarkdownEditorProps) {
   const [activeTab, setActiveTab] = useState<"edit" | "preview" | "split">("edit")
 
@@ -56,11 +58,12 @@ export function MarkdownEditor({
               value={value}
               onChange={handleChange}
               preview="edit"
-              hideToolbar={false}
+              hideToolbar={readOnly}
               height={height}
               data-color-mode="light"
               textareaProps={{
                 placeholder,
+                readOnly,
                 style: {
                   fontSize: 14,
                   lineHeight: 1.5,
@@ -92,11 +95,12 @@ export function MarkdownEditor({
               value={value}
               onChange={handleChange}
               preview="live"
-              hideToolbar={false}
+              hideToolbar={readOnly}
               height={height}
               data-color-mode="light"
               textareaProps={{
                 placeholder,
+                readOnly,
                 style: {
                   fontSize: 14,
                   lineHeight: 1.5,

@@ -19,6 +19,7 @@ interface NoteListProps {
   notes: Note[]
   onEdit: (note: Note) => void
   onDelete: (id: number) => void
+  onCollaborate?: (note: Note) => void
   searchQuery?: string
   selectedNotes: number[]
   onToggleSelection: (noteId: number) => void
@@ -30,6 +31,7 @@ export function NoteList({
   notes,
   onEdit,
   onDelete,
+  onCollaborate,
   searchQuery,
   selectedNotes,
   onToggleSelection,
@@ -115,6 +117,7 @@ export function NoteList({
             note={note}
             onEdit={onEdit}
             onDelete={onDelete}
+            onCollaborate={onCollaborate}
             isSelected={selectedNotes.includes(note.id)}
             onToggleSelection={onToggleSelection}
           />

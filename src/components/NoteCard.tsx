@@ -4,7 +4,7 @@ import { useState } from "react"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Trash2, Edit, FileText, Clock, Eye, EyeOff } from "lucide-react"
+import { Trash2, Edit, FileText, Clock, Eye, EyeOff, Users } from "lucide-react"
 import { DeleteConfirmDialog } from "./DeleteConfirmDialog"
 import { MarkdownPreview } from "./MarkdownPreview"
 
@@ -24,11 +24,12 @@ interface NoteCardProps {
   note: Note
   onEdit: (note: Note) => void
   onDelete: (id: number) => void
+  onCollaborate?: (note: Note) => void
   isSelected?: boolean
   onToggleSelection?: (noteId: number) => void
 }
 
-export function NoteCard({ note, onEdit, onDelete, isSelected = false, onToggleSelection }: NoteCardProps) {
+export function NoteCard({ note, onEdit, onDelete, onCollaborate, isSelected = false, onToggleSelection }: NoteCardProps) {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
 
   const formatDate = (date: Date) => {
@@ -125,6 +126,20 @@ export function NoteCard({ note, onEdit, onDelete, isSelected = false, onToggleS
             )}
           </div>
           <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+            {onCollaborate && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0 hover:bg-blue-50 hover:text-blue-600"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onCollaborate(note)
+                }}
+                title="协作编辑"
+              >
+                <Users className="h-3 w-3" />
+              </Button>
+            )}
             <Button
               variant="ghost"
               size="sm"
@@ -133,6 +148,7 @@ export function NoteCard({ note, onEdit, onDelete, isSelected = false, onToggleS
                 e.stopPropagation()
                 onEdit(note)
               }}
+              title="编辑"
             >
               <Edit className="h-3 w-3" />
             </Button>
@@ -144,6 +160,7 @@ export function NoteCard({ note, onEdit, onDelete, isSelected = false, onToggleS
                 e.stopPropagation()
                 handleDeleteClick()
               }}
+              title="删除"
             >
               <Trash2 className="h-3 w-3" />
             </Button>
