@@ -15,7 +15,9 @@ import {
   X,
   Home,
   Wrench,
-  Bell
+  Bell,
+  FileText,
+  UserCog
 } from 'lucide-react'
 
 interface AdminSidebarProps {
@@ -39,6 +41,11 @@ const navigation = [
     icon: Bell,
   },
   {
+    name: '更新记录',
+    href: '/admin/updates',
+    icon: FileText,
+  },
+  {
     name: '站点设置',
     href: '/admin/settings',
     icon: Settings,
@@ -57,6 +64,11 @@ const navigation = [
     name: '统计分析',
     href: '/admin/analytics',
     icon: BarChart3,
+  },
+  {
+    name: '个人设置',
+    href: '/admin/profile',
+    icon: UserCog,
   },
 ]
 

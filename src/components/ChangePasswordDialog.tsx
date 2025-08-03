@@ -13,6 +13,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
+import { CaptchaInput } from "@/components/admin/CaptchaInput"
 import { Eye, EyeOff, Key } from "lucide-react"
 
 interface ChangePasswordDialogProps {
@@ -25,6 +26,8 @@ export function ChangePasswordDialog({ onError, onSuccess }: ChangePasswordDialo
   const [currentPassword, setCurrentPassword] = useState("")
   const [newPassword, setNewPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
+  const [captcha, setCaptcha] = useState("")
+  const [captchaSessionId, setCaptchaSessionId] = useState("")
   const [showCurrentPassword, setShowCurrentPassword] = useState(false)
   const [showNewPassword, setShowNewPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
@@ -32,10 +35,21 @@ export function ChangePasswordDialog({ onError, onSuccess }: ChangePasswordDialo
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     // 验证新密码匹配
     if (newPassword !== confirmPassword) {
       onError("两次输入的新密码不一致")
+      return
+    }
+
+    // 验证验证码
+    if (!captcha) {
+      onError("请输入验证码")
+      return
+    }
+
+    if (!captchaSessionId) {
+      onError("验证码会话无效，请刷新验证码")
       return
     }
 
@@ -50,6 +64,8 @@ export function ChangePasswordDialog({ onError, onSuccess }: ChangePasswordDialo
         body: JSON.stringify({
           currentPassword,
           newPassword,
+          captcha,
+          captchaSessionId,
         }),
       })
 
@@ -62,6 +78,8 @@ export function ChangePasswordDialog({ onError, onSuccess }: ChangePasswordDialo
         setCurrentPassword("")
         setNewPassword("")
         setConfirmPassword("")
+        setCaptcha("")
+        setCaptchaSessionId("")
       } else {
         onError(data.error || "修改密码失败")
       }
@@ -79,6 +97,8 @@ export function ChangePasswordDialog({ onError, onSuccess }: ChangePasswordDialo
       setCurrentPassword("")
       setNewPassword("")
       setConfirmPassword("")
+      setCaptcha("")
+      setCaptchaSessionId("")
       setShowCurrentPassword(false)
       setShowNewPassword(false)
       setShowConfirmPassword(false)
@@ -108,7 +128,7 @@ export function ChangePasswordDialog({ onError, onSuccess }: ChangePasswordDialo
         <DialogHeader>
           <DialogTitle>修改密码</DialogTitle>
           <DialogDescription>
-            请输入当前密码和新密码。新密码长度至少为6位。
+            为了账户安全，请输入当前密码、新密码和验证码。新密码长度至少为6位。
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
@@ -239,6 +259,19 @@ export function ChangePasswordDialog({ onError, onSuccess }: ChangePasswordDialo
                 </div>
               )}
             </div>
+
+            {/* 验证码 */}
+            <div className="grid gap-2">
+              <CaptchaInput
+                value={captcha}
+                onChange={setCaptcha}
+                sessionId={captchaSessionId}
+                onSessionIdChange={setCaptchaSessionId}
+                disabled={isLoading}
+                required
+                apiEndpoint="/api/user/captcha"
+              />
+            </div>
           </div>
           <DialogFooter>
             <Button
@@ -249,13 +282,14 @@ export function ChangePasswordDialog({ onError, onSuccess }: ChangePasswordDialo
             >
               取消
             </Button>
-            <Button 
-              type="submit" 
+            <Button
+              type="submit"
               disabled={
-                isLoading || 
-                !currentPassword || 
-                !newPassword || 
+                isLoading ||
+                !currentPassword ||
+                !newPassword ||
                 !confirmPassword ||
+                !captcha ||
                 newPassword !== confirmPassword
               }
             >

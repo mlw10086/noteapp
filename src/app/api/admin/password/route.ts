@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server"
 import bcrypt from "bcryptjs"
+import { withAdminAuth } from "@/lib/admin-auth-middleware"
 import { prisma } from "@/lib/prisma"
-import { withAuth } from "@/lib/auth-middleware"
 import { captchaStore } from "@/lib/captcha-store"
 
-// PUT - 修改密码
+// PUT - 修改管理员密码
 export async function PUT(request: NextRequest) {
-  return withAuth(request, async (request, userId) => {
+  return withAdminAuth(request, async (request, adminId, adminRole) => {
     try {
       const body = await request.json()
       const { currentPassword, newPassword, captcha, captchaSessionId } = body
@@ -21,13 +21,13 @@ export async function PUT(request: NextRequest) {
 
       if (!captcha || !captchaSessionId) {
         return NextResponse.json(
-          { error: "验证码和会话ID都是必填项" },
+          { error: "验证码不能为空" },
           { status: 400 }
         )
       }
 
       // 验证验证码
-      const isCaptchaValid = captchaStore.verifyCaptcha(captchaSessionId, captcha)
+      const isCaptchaValid = captchaStore.verify(captchaSessionId, captcha)
       if (!isCaptchaValid) {
         return NextResponse.json(
           { error: "验证码错误或已过期" },
@@ -56,15 +56,15 @@ export async function PUT(request: NextRequest) {
         )
       }
 
-      // 获取用户当前密码
-      const user = await prisma.user.findUnique({
-        where: { id: userId },
+      // 获取管理员当前密码
+      const admin = await prisma.admin.findUnique({
+        where: { id: adminId },
         select: { password: true }
       })
 
-      if (!user) {
+      if (!admin) {
         return NextResponse.json(
-          { error: "用户不存在" },
+          { error: "管理员不存在" },
           { status: 404 }
         )
       }
@@ -72,7 +72,7 @@ export async function PUT(request: NextRequest) {
       // 验证当前密码
       const isCurrentPasswordValid = await bcrypt.compare(
         currentPassword,
-        user.password
+        admin.password
       )
 
       if (!isCurrentPasswordValid) {
@@ -86,25 +86,38 @@ export async function PUT(request: NextRequest) {
       const hashedNewPassword = await bcrypt.hash(newPassword, 12)
 
       // 更新密码
-      await prisma.user.update({
-        where: { id: userId },
+      await prisma.admin.update({
+        where: { id: adminId },
         data: {
           password: hashedNewPassword,
         }
       })
 
-      // 删除已使用的验证码
-      captchaStore.deleteCaptcha(captchaSessionId)
-
-      // 记录操作日志
-      console.log(`用户密码修改成功: 用户ID ${userId}`)
+      // 记录管理员操作日志
+      try {
+        await prisma.adminLoginHistory.create({
+          data: {
+            adminId: adminId,
+            action: 'password_changed',
+            ipAddress: request.headers.get('x-forwarded-for') || 
+                      request.headers.get('x-real-ip') || 
+                      'unknown',
+            userAgent: request.headers.get('user-agent') || 'unknown',
+            success: true,
+            details: '管理员修改密码'
+          }
+        })
+      } catch (logError) {
+        console.error('记录管理员操作日志失败:', logError)
+        // 不影响主要功能，继续执行
+      }
 
       return NextResponse.json({
         message: "密码修改成功"
       })
 
     } catch (error) {
-      console.error("修改密码失败:", error)
+      console.error("修改管理员密码失败:", error)
       return NextResponse.json(
         { error: "服务器内部错误" },
         { status: 500 }

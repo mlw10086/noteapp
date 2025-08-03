@@ -151,6 +151,8 @@ model Admin {
   announcements Announcement[]
   // 关联通知发送日志
   notificationLogs AdminNotificationLog[]
+  // 关联创建的系统更新
+  systemUpdates SystemUpdate[]
 
   @@map("admins")
 }
@@ -301,4 +303,24 @@ model NoteCollaborator {
 
   @@unique([noteId, userId])
   @@map("note_collaborators")
+}
+
+// 系统更新记录表
+model SystemUpdate {
+  id          Int      @id @default(autoincrement())
+  version     String   @unique // 版本号，如 "1.2.0"
+  title       String   // 更新标题
+  content     String   // 更新内容，支持 Markdown
+  type        String   @default("feature") // feature, bugfix, improvement, security
+  priority    String   @default("normal") // low, normal, high, critical
+  isPublished Boolean  @default(false) @map("is_published") // 是否发布
+  publishedAt DateTime? @map("published_at") // 发布时间
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // 关联创建者（管理员）
+  createdBy   Int      @map("created_by")
+  admin       Admin    @relation(fields: [createdBy], references: [id], onDelete: Cascade)
+
+  @@map("system_updates")
 }
