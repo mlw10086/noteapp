@@ -84,11 +84,20 @@ export async function POST(
         }
       })
 
-      if (existingInvitation && existingInvitation.status === 'pending') {
-        return NextResponse.json(
-          { error: '已有待处理的邀请' },
-          { status: 400 }
-        )
+      if (existingInvitation) {
+        if (existingInvitation.status === 'pending') {
+          return NextResponse.json(
+            { error: '已有待处理的邀请' },
+            { status: 400 }
+          )
+        } else {
+          // 如果存在非待处理的邀请记录，删除旧记录以便创建新邀请
+          await prisma.noteInvitation.delete({
+            where: {
+              id: existingInvitation.id
+            }
+          })
+        }
       }
 
       // 计算过期时间

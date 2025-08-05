@@ -45,20 +45,23 @@ model User {
   receivedInvitations NoteInvitation[] @relation("InvitationReceiver")
   // 关联协作的便签
   collaborations NoteCollaborator[]
+  // 关联协作会话
+  collaborationSessions CollaborationSession[]
 
   @@map("users")
 }
 
 model Note {
-  id          Int       @id @default(autoincrement())
-  title       String
-  content     String?
-  color       String    @default("#ffffff")
-  tags        String[]
-  status      String    @default("published") // published, draft, scheduled
-  publishAt   DateTime? @map("publish_at")
-  createdAt   DateTime  @default(now()) @map("created_at")
-  updatedAt   DateTime  @updatedAt @map("updated_at")
+  id                    Int       @id @default(autoincrement())
+  title                 String
+  content               String?
+  color                 String    @default("#ffffff")
+  tags                  String[]
+  status                String    @default("published") // published, draft, scheduled
+  publishAt             DateTime? @map("publish_at")
+  collaborationEnabled  Boolean   @default(false) @map("collaboration_enabled") // 协作启用状态
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @updatedAt @map("updated_at")
 
   // 关联用户
   userId      Int       @map("user_id")
@@ -68,7 +71,12 @@ model Note {
   collaborators NoteCollaborator[]
   // 关联邀请
   invitations NoteInvitation[]
+  // 关联协作设置
+  collaborationSettings CollaborationSettings?
+  // 关联协作会话
+  collaborationSessions CollaborationSession[]
 
+  @@index([collaborationEnabled], name: "idx_notes_collaboration_enabled")
   @@map("notes")
 }
 
@@ -153,6 +161,8 @@ model Admin {
   notificationLogs AdminNotificationLog[]
   // 关联创建的系统更新
   systemUpdates SystemUpdate[]
+  // 关联协作设置更新
+  collaborationSettingsUpdates CollaborationSettings[]
 
   @@map("admins")
 }
@@ -323,4 +333,60 @@ model SystemUpdate {
   admin       Admin    @relation(fields: [createdBy], references: [id], onDelete: Cascade)
 
   @@map("system_updates")
+}
+
+// 协作设置表
+model CollaborationSettings {
+  id                    Int       @id @default(autoincrement())
+
+  // 全局协作设置
+  isGloballyEnabled     Boolean   @default(true) @map("is_globally_enabled") // 全局协作开关
+  globalDisabledUntil   DateTime? @map("global_disabled_until") // 全局禁用到期时间
+  globalDisabledReason  String?   @map("global_disabled_reason") // 全局禁用原因
+
+  // 单个便签协作设置
+  noteId                Int?      @map("note_id") // null表示全局设置
+  isNoteEnabled         Boolean   @default(true) @map("is_note_enabled") // 便签协作开关
+  noteDisabledUntil     DateTime? @map("note_disabled_until") // 便签禁用到期时间
+  noteDisabledReason    String?   @map("note_disabled_reason") // 便签禁用原因
+
+  // 协作限制设置
+  maxCollaborators      Int       @default(10) @map("max_collaborators") // 最大协作者数量
+  allowAnonymous        Boolean   @default(false) @map("allow_anonymous") // 是否允许匿名协作
+  requireApproval       Boolean   @default(false) @map("require_approval") // 是否需要审批
+
+  // 元数据
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @updatedAt @map("updated_at")
+  updatedBy             Int?      @map("updated_by") // 更新者管理员ID
+
+  // 关联便签（可选）
+  note                  Note?     @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  // 关联更新者管理员（可选）
+  admin                 Admin?    @relation(fields: [updatedBy], references: [id], onDelete: SetNull)
+
+  @@unique([noteId]) // 每个便签只能有一个协作设置
+  @@map("collaboration_settings")
+}
+
+// 协作会话表（实时协作房间记录）
+model CollaborationSession {
+  id            Int      @id @default(autoincrement())
+  noteId        Int      @map("note_id")
+  userId        Int      @map("user_id")
+  socketId      String   @map("socket_id") // Socket.IO 连接ID
+  joinedAt      DateTime @default(now()) @map("joined_at")
+  leftAt        DateTime? @map("left_at")
+  isActive      Boolean  @default(true) @map("is_active")
+  lastActivity  DateTime @default(now()) @map("last_activity")
+
+  // 协作统计
+  operationsCount Int    @default(0) @map("operations_count") // 操作次数
+  charactersTyped Int    @default(0) @map("characters_typed") // 输入字符数
+
+  // 关联便签和用户
+  note          Note     @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("collaboration_sessions")
 }

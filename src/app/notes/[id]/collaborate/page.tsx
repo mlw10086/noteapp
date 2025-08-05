@@ -7,8 +7,9 @@ import { AuthGuard } from '@/components/AuthGuard'
 import { CollaborativeNoteEditor } from '@/components/collaboration/CollaborativeNoteEditor'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { ArrowLeft, AlertCircle } from 'lucide-react'
+import { ArrowLeft, AlertCircle, Users, UserPlus } from 'lucide-react'
 import { useToast, ToastContainer } from '@/components/Toast'
+// import { InviteCollaboratorDialog } from '@/components/collaboration/InviteCollaboratorDialog'
 
 interface Note {
   id: number
@@ -32,6 +33,8 @@ export default function CollaborateNotePage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isOwner, setIsOwner] = useState(false)
+  const [hasEditPermission, setHasEditPermission] = useState(false)
+  const [showInviteDialog, setShowInviteDialog] = useState(false)
   
   const noteId = params.id as string
   
@@ -65,15 +68,12 @@ export default function CollaborateNotePage() {
 
       // 调试信息
       console.log('便签数据:', data)
-      console.log('便签所有者ID:', data.userId)
-      console.log('当前用户ID:', session?.user?.id)
-      console.log('当前用户ID (数字):', parseInt(session?.user?.id || '0'))
+      console.log('用户权限:', data.userPermission)
+      console.log('是否所有者:', data.isOwner)
 
-      const isNoteOwner = data.userId === parseInt(session?.user?.id || '0')
-      console.log('是否为所有者:', isNoteOwner)
-
-      // 设置真实的所有者权限
-      setIsOwner(isNoteOwner)
+      // 设置权限状态
+      setIsOwner(data.isOwner || false)
+      setHasEditPermission(data.userPermission === 'edit')
       
     } catch (error) {
       console.error('获取便签失败:', error)
@@ -202,9 +202,25 @@ export default function CollaborateNotePage() {
           </div>
           
           <div className="flex items-center gap-2">
-            {!isOwner && (
+            {isOwner && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowInviteDialog(true)}
+                className="flex items-center gap-2"
+              >
+                <UserPlus className="h-4 w-4" />
+                邀请协作
+              </Button>
+            )}
+            {!hasEditPermission && (
               <div className="text-sm text-muted-foreground">
                 只读模式
+              </div>
+            )}
+            {hasEditPermission && !isOwner && (
+              <div className="text-sm text-green-600">
+                协作编辑模式
               </div>
             )}
           </div>
@@ -216,7 +232,7 @@ export default function CollaborateNotePage() {
             note={note}
             onSave={handleSave}
             onClose={handleClose}
-            isReadOnly={!isOwner}
+            isReadOnly={!hasEditPermission}
           />
         </div>
         
@@ -230,13 +246,30 @@ export default function CollaborateNotePage() {
             <p>• <strong>冲突解决</strong>：系统会自动处理编辑冲突，确保数据一致性</p>
             <p>• <strong>在线状态</strong>：可以看到当前正在协作的其他用户</p>
             <p>• <strong>自动保存</strong>：编辑内容会自动保存，无需手动操作</p>
-            {!isOwner && (
-              <p>• <strong>权限限制</strong>：当前为只读模式，只有便签所有者可以编辑</p>
+            {!hasEditPermission && (
+              <p>• <strong>权限限制</strong>：当前为只读模式，您没有编辑权限</p>
+            )}
+            {hasEditPermission && !isOwner && (
+              <p>• <strong>协作权限</strong>：您有编辑权限，可以与其他用户协作编辑</p>
             )}
           </CardContent>
         </Card>
       </div>
-      
+
+      {/* 邀请协作对话框 - 暂时禁用 */}
+      {/* {isOwner && (
+        <InviteCollaboratorDialog
+          open={showInviteDialog}
+          onOpenChange={setShowInviteDialog}
+          noteId={parseInt(noteId)}
+          onInviteSent={() => {
+            toast('邀请已发送', 'success')
+            setShowInviteDialog(false)
+          }}
+          onError={(error) => toast(error, 'error')}
+        />
+      )} */}
+
       <ToastContainer toasts={toasts} onRemove={removeToast} />
     </AuthGuard>
   )

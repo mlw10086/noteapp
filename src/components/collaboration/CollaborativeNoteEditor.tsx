@@ -95,19 +95,38 @@ export function CollaborativeNoteEditor({
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>(ConnectionStatus.DISCONNECTED)
   const [connectedUsers, setConnectedUsers] = useState<ConnectedUser[]>([])
   const [isCollaborationEnabled, setIsCollaborationEnabled] = useState(false)
+  const [isOwner, setIsOwner] = useState(false)
   
   // 编辑器引用
   const titleRef = useRef<HTMLInputElement>(null)
   const contentRef = useRef<HTMLTextAreaElement>(null)
   const lastSyncedContent = useRef(content)
   const lastSyncedTitle = useRef(title)
-  
+
   // 防抖保存
   const saveTimeoutRef = useRef<NodeJS.Timeout>()
+  const lastSaveRequestRef = useRef<string | null>(null)
   
+  // 获取协作状态
+  const fetchCollaborationStatus = async () => {
+    try {
+      const response = await fetch(`/api/notes/${note.id}/collaboration`)
+      if (response.ok) {
+        const data = await response.json()
+        setIsCollaborationEnabled(data.collaborationEnabled)
+        setIsOwner(data.isOwner)
+      }
+    } catch (error) {
+      console.error('获取协作状态失败:', error)
+    }
+  }
+
   // 初始化协作管理器
   useEffect(() => {
     if (!session?.user || isReadOnly) return
+
+    // 首先获取协作状态
+    fetchCollaborationStatus()
     
     const manager = new SocketManager({
       onConnectionStatusChange: (status) => {
@@ -119,19 +138,18 @@ export function CollaborativeNoteEditor({
         }
       },
       onUserJoined: (user) => {
-        setConnectedUsers(prev => [...prev.filter(u => u.id !== user.id), user])
-        toast.info("用户加入", `${user.name} 加入了协作`)
+        // 只显示通知，不更新用户列表（由onRoomUsers统一处理）
+        toast.default("用户加入", `${user.name} 加入了协作`)
       },
       onUserLeft: (userId) => {
-        setConnectedUsers(prev => {
-          const user = prev.find(u => u.id === userId)
-          if (user) {
-            toast.info("用户离开", `${user.name} 离开了协作`)
-          }
-          return prev.filter(u => u.id !== userId)
-        })
+        // 只显示通知，不更新用户列表（由onRoomUsers统一处理）
+        const user = connectedUsers.find(u => u.id === userId)
+        if (user) {
+          toast.default("用户离开", `${user.name} 离开了协作`)
+        }
       },
       onRoomUsers: (users) => {
+        console.log('收到房间用户列表:', users.map(u => u.name))
         setConnectedUsers(users)
       },
       onDocumentOperation: (operation) => {
@@ -153,6 +171,21 @@ export function CollaborativeNoteEditor({
       },
       onRoomError: (error) => {
         toast.error("协作错误", error)
+      },
+      onCollaborationStatusChange: (enabled) => {
+        console.log('收到协作状态变化:', enabled)
+        setIsCollaborationEnabled(enabled)
+        if (!enabled) {
+          // 协作被禁用，断开连接
+          if (socketManager) {
+            socketManager.leaveCurrentRoom()
+            socketManager.disconnect()
+            setConnectedUsers([])
+          }
+          toast.default("协作已被禁用", "便签所有者已关闭协作功能")
+        } else {
+          toast.success("协作已启用", "便签所有者已开启协作功能")
+        }
       }
     })
     
@@ -162,31 +195,104 @@ export function CollaborativeNoteEditor({
       manager.destroy()
     }
   }, [session, isReadOnly])
-  
+
+  // 监听协作状态变化，自动连接逻辑
+  useEffect(() => {
+    if (!socketManager || isReadOnly) return
+
+    // 如果协作已启用且当前未连接，则自动连接
+    if (isCollaborationEnabled && connectionStatus === ConnectionStatus.DISCONNECTED) {
+      const autoConnect = async () => {
+        try {
+          console.log(`${isOwner ? '所有者' : '被邀请者'}自动连接到协作房间`)
+          const connected = await socketManager.connect()
+          if (connected) {
+            await socketManager.joinNoteRoom(note.id)
+            console.log(`${isOwner ? '所有者' : '被邀请者'}成功连接到协作房间`)
+          }
+        } catch (error) {
+          console.error('自动连接协作失败:', error)
+        }
+      }
+
+      autoConnect()
+    }
+  }, [socketManager, isCollaborationEnabled, connectionStatus, isOwner, isReadOnly, note.id])
+
   // 启用协作
   const enableCollaboration = async () => {
-    if (!socketManager || isReadOnly) return
-    
+    if (!socketManager || isReadOnly || !isOwner) return
+
     try {
-      const connected = await socketManager.connect()
-      if (connected) {
-        await socketManager.joinNoteRoom(note.id)
-        setIsCollaborationEnabled(true)
-        toast.success("协作已启用", "其他用户现在可以加入编辑")
+      // 调用API启用协作
+      const response = await fetch(`/api/notes/${note.id}/collaboration`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ enabled: true }),
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setIsCollaborationEnabled(data.collaborationEnabled)
+
+        // 确保WebSocket连接并加入房间
+        console.log('所有者启用协作，当前连接状态:', connectionStatus)
+
+        // 如果未连接，先连接
+        if (connectionStatus === ConnectionStatus.DISCONNECTED) {
+          const connected = await socketManager.connect()
+          if (connected) {
+            await socketManager.joinNoteRoom(note.id)
+            toast.success("协作已启用", "其他用户现在可以加入编辑")
+          } else {
+            toast.error("连接失败", "无法建立协作连接")
+          }
+        } else if (connectionStatus === ConnectionStatus.CONNECTED) {
+          // 如果已连接，直接加入房间
+          await socketManager.joinNoteRoom(note.id)
+          toast.success("协作已启用", "其他用户现在可以加入编辑")
+        } else {
+          toast.error("连接状态异常", "请稍后重试")
+        }
+      } else {
+        throw new Error('启用协作失败')
       }
     } catch (error) {
+      console.error('启用协作失败:', error)
       toast.error("启用协作失败", "请稍后重试")
     }
   }
-  
+
   // 禁用协作
-  const disableCollaboration = () => {
-    if (socketManager) {
-      socketManager.leaveCurrentRoom()
-      socketManager.disconnect()
-      setIsCollaborationEnabled(false)
-      setConnectedUsers([])
-      toast.info("协作已禁用", "切换到单人编辑模式")
+  const disableCollaboration = async () => {
+    if (!socketManager || !isOwner) return
+
+    try {
+      // 调用API禁用协作
+      const response = await fetch(`/api/notes/${note.id}/collaboration`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ enabled: false }),
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setIsCollaborationEnabled(data.collaborationEnabled)
+
+        // 断开WebSocket连接
+        socketManager.leaveCurrentRoom()
+        socketManager.disconnect()
+        setConnectedUsers([])
+        toast.default("协作已禁用", "切换到单人编辑模式")
+      } else {
+        throw new Error('禁用协作失败')
+      }
+    } catch (error) {
+      toast.error("禁用协作失败", "请稍后重试")
     }
   }
   
@@ -282,13 +388,19 @@ export function CollaborativeNoteEditor({
     lastSyncedContent.current = content
     setHasUnsavedChanges(true)
 
-    // 防抖保存
+    // 防抖保存 - 只在不是正在保存时设置
     if (saveTimeoutRef.current) {
       clearTimeout(saveTimeoutRef.current)
     }
-    saveTimeoutRef.current = setTimeout(() => {
-      handleSave()
-    }, 2000)
+
+    if (!isSaving) {
+      saveTimeoutRef.current = setTimeout(() => {
+        // 再次检查是否正在保存，避免重复调用
+        if (!isSaving) {
+          handleSave(false)
+        }
+      }, 2000)
+    }
   }
   
   // 简化的插入位置检测
@@ -318,24 +430,48 @@ export function CollaborativeNoteEditor({
   }
   
   // 保存便签
-  const handleSave = async () => {
+  const handleSave = async (isManualSave = false) => {
     if (isSaving) return
-    
+
+    // 生成唯一的保存请求ID，防止重复保存
+    const saveRequestId = `${Date.now()}-${Math.random()}`
+    const currentContent = `${title}|${content}`
+
+    // 检查是否与上次保存的内容相同
+    if (lastSaveRequestRef.current === currentContent) {
+      console.log('内容未变化，跳过保存')
+      return
+    }
+
+    // 如果是手动保存，清除防抖定时器
+    if (isManualSave && saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current)
+      saveTimeoutRef.current = undefined
+    }
+
+    console.log(`开始保存 (${isManualSave ? '手动' : '自动'}):`, saveRequestId)
+
     setIsSaving(true)
+    lastSaveRequestRef.current = currentContent
+
     try {
       await onSave({
         title,
         content
       })
-      
+
       // 通知协作用户文档已保存
       if (socketManager && isCollaborationEnabled) {
         socketManager.saveDocument(content)
       }
-      
+
       setHasUnsavedChanges(false)
       toast.success("保存成功", "便签已更新")
+      console.log(`保存成功:`, saveRequestId)
     } catch (error) {
+      console.error(`保存失败:`, saveRequestId, error)
+      // 保存失败时重置标识符，允许重试
+      lastSaveRequestRef.current = null
       toast.error("保存失败", "请稍后重试")
     } finally {
       setIsSaving(false)
@@ -373,8 +509,8 @@ export function CollaborativeNoteEditor({
                 </span>
               </div>
               
-              {/* 协作控制 */}
-              {!isReadOnly && (
+              {/* 协作控制 - 仅所有者可见 */}
+              {isOwner && (
                 <>
                   {!isCollaborationEnabled ? (
                     <Button
@@ -398,12 +534,29 @@ export function CollaborativeNoteEditor({
                   )}
                 </>
               )}
+
+              {/* 协作状态显示 - 被邀请者可见 */}
+              {!isOwner && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  {isCollaborationEnabled ? (
+                    <>
+                      <Share2 className="h-4 w-4 text-green-500" />
+                      <span>协作已启用</span>
+                    </>
+                  ) : (
+                    <>
+                      <Eye className="h-4 w-4 text-gray-500" />
+                      <span>仅查看模式</span>
+                    </>
+                  )}
+                </div>
+              )}
               
-              {/* 保存按钮 */}
-              {!isReadOnly && (
+              {/* 保存按钮 - 根据协作状态和用户权限显示 */}
+              {(isOwner || (!isOwner && isCollaborationEnabled)) && !isReadOnly && (
                 <Button
                   size="sm"
-                  onClick={handleSave}
+                  onClick={() => handleSave(true)}
                   disabled={isSaving || !hasUnsavedChanges}
                 >
                   <Save className="h-4 w-4 mr-2" />
@@ -447,14 +600,14 @@ export function CollaborativeNoteEditor({
           onChange={handleTitleChange}
           placeholder="便签标题..."
           className="text-lg font-medium"
-          readOnly={isReadOnly}
+          readOnly={isReadOnly || (!isOwner && !isCollaborationEnabled)}
         />
         
         {/* 内容编辑器 */}
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <label className="text-sm font-medium">内容</label>
-            {!isReadOnly && (
+            {!isReadOnly && (isOwner || isCollaborationEnabled) && (
               <div className="flex items-center space-x-2">
                 <FileText className="h-4 w-4 text-muted-foreground" />
                 <Switch
@@ -477,7 +630,7 @@ export function CollaborativeNoteEditor({
                 onChange={handleContentChange}
                 placeholder="使用 Markdown 语法编写你的便签..."
                 height={400}
-                readOnly={isReadOnly}
+                readOnly={isReadOnly || (!isOwner && !isCollaborationEnabled)}
               />
             </div>
           ) : (
@@ -487,7 +640,7 @@ export function CollaborativeNoteEditor({
               onChange={handleContentChange}
               placeholder="开始编写你的便签..."
               className="flex-1 min-h-[400px] resize-none"
-              readOnly={isReadOnly}
+              readOnly={isReadOnly || (!isOwner && !isCollaborationEnabled)}
             />
           )}
         </div>

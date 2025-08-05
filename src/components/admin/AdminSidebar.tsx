@@ -17,7 +17,8 @@ import {
   Wrench,
   Bell,
   FileText,
-  UserCog
+  UserCog,
+  Users as UsersIcon
 } from 'lucide-react'
 
 interface AdminSidebarProps {
@@ -34,6 +35,11 @@ const navigation = [
     name: '用户管理',
     href: '/admin/users',
     icon: Users,
+  },
+  {
+    name: '协作管理',
+    href: '/admin/collaboration',
+    icon: UsersIcon,
   },
   {
     name: '通知管理',

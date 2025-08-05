@@ -16,6 +16,7 @@ export interface ConnectedUser {
   id: string
   name: string
   email: string
+  avatar?: string
   socketId: string
   noteId?: number
 }
@@ -41,6 +42,7 @@ export interface CollaborationCallbacks {
   onRoomUsers?: (users: ConnectedUser[]) => void
   onRoomError?: (error: string) => void
   onConnectionStatusChange?: (status: ConnectionStatus) => void
+  onCollaborationStatusChange?: (enabled: boolean) => void
 }
 
 // Socket 连接管理器类
@@ -70,7 +72,24 @@ export class SocketManager {
 
       // 获取认证 token
       const session = await getSession()
-      const token = session?.accessToken || 'demo-token-for-testing'
+      if (!session?.user?.id) {
+        throw new Error('用户未登录')
+      }
+
+      // 从API获取Socket认证token
+      const tokenResponse = await fetch('/api/socket-auth/token', {
+        method: 'GET',
+        credentials: 'include', // 包含认证cookies
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+      if (!tokenResponse.ok) {
+        const errorData = await tokenResponse.json().catch(() => ({}))
+        console.error('获取Socket token失败:', tokenResponse.status, errorData)
+        throw new Error('获取认证token失败')
+      }
+      const { token } = await tokenResponse.json()
 
       // 创建 Socket 连接
       this.socket = io({
@@ -292,6 +311,12 @@ export class SocketManager {
     this.socket.on('room:error', (error) => {
       console.error('房间错误:', error)
       this.callbacks.onRoomError?.(error)
+    })
+
+    // 协作状态变化事件
+    this.socket.on('collaboration:status-changed', (data) => {
+      console.log('协作状态变化:', data)
+      this.callbacks.onCollaborationStatusChange?.(data.enabled)
     })
   }
 

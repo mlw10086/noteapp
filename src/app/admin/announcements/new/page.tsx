@@ -8,13 +8,14 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
-import { 
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { DateTimePicker } from '@/components/ui/date-picker'
 // import { NoteEditor } from '@/components/NoteEditor'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Save, ArrowLeft, AlertCircle, CheckCircle } from 'lucide-react'
@@ -27,8 +28,8 @@ export default function NewAnnouncementPage() {
   const [type, setType] = useState('info')
   const [priority, setPriority] = useState(0)
   const [isActive, setIsActive] = useState(true)
-  const [startDate, setStartDate] = useState('')
-  const [endDate, setEndDate] = useState('')
+  const [startDate, setStartDate] = useState<Date | null>(null)
+  const [endDate, setEndDate] = useState<Date | null>(null)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
 
@@ -53,8 +54,8 @@ export default function NewAnnouncementPage() {
           type,
           priority,
           isActive,
-          startDate: startDate || null,
-          endDate: endDate || null,
+          startDate: startDate ? startDate.toISOString() : null,
+          endDate: endDate ? endDate.toISOString() : null,
         }),
       })
 
@@ -202,21 +203,21 @@ export default function NewAnnouncementPage() {
 
                 <div className="space-y-2">
                   <Label htmlFor="startDate">开始时间（可选）</Label>
-                  <Input
-                    id="startDate"
-                    type="datetime-local"
-                    value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
+                  <DateTimePicker
+                    date={startDate || undefined}
+                    onDateChange={(date) => setStartDate(date || null)}
+                    placeholder="选择开始时间"
+                    className="w-full"
                   />
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="endDate">结束时间（可选）</Label>
-                  <Input
-                    id="endDate"
-                    type="datetime-local"
-                    value={endDate}
-                    onChange={(e) => setEndDate(e.target.value)}
+                  <DateTimePicker
+                    date={endDate || undefined}
+                    onDateChange={(date) => setEndDate(date || null)}
+                    placeholder="选择结束时间"
+                    className="w-full"
                   />
                 </div>
 

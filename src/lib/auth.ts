@@ -130,15 +130,53 @@ export const authOptions: NextAuthOptions = {
       }
       return true
     },
-    async jwt({ token, user }) {
+    async jwt({ token, user, account }) {
       if (user) {
         token.id = user.id
+        // 检查是否为管理员登录
+        if (account?.provider === "admin-credentials") {
+          token.isAdmin = true
+          // 获取管理员角色
+          try {
+            const admin = await prisma.admin.findUnique({
+              where: { id: parseInt(user.id) },
+              select: { role: true }
+            })
+            token.adminRole = admin?.role || "admin"
+          } catch (error) {
+            console.error("获取管理员角色错误:", error)
+            token.adminRole = "admin"
+          }
+        } else {
+          // 普通用户登录，检查是否同时也是管理员
+          try {
+            const admin = await prisma.admin.findUnique({
+              where: {
+                email: user.email!,
+                isActive: true
+              },
+              select: { id: true, role: true }
+            })
+            token.isAdmin = !!admin
+            token.adminRole = admin?.role || null
+            if (admin) {
+              token.adminId = admin.id.toString()
+            }
+          } catch (error) {
+            console.error("检查管理员权限错误:", error)
+            token.isAdmin = false
+            token.adminRole = null
+          }
+        }
       }
       return token
     },
     async session({ session, token }) {
       if (token) {
         session.user.id = token.id as string
+        ;(session as any).user.isAdmin = token.isAdmin || false
+        ;(session as any).user.adminRole = token.adminRole || null
+        ;(session as any).user.adminId = token.adminId || null
       }
       return session
     },

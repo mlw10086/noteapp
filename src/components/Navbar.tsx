@@ -14,7 +14,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Clock, FileText, Home, User, LogOut, LogIn, UserPlus } from "lucide-react"
+import { Clock, FileText, Home, User, LogOut, LogIn, UserPlus, Users } from "lucide-react"
 import { UserAvatar } from "@/components/UserAvatar"
 import { NavbarSearch } from "@/components/NavbarSearch"
 import { ThemeToggle } from "@/components/ThemeToggle"
@@ -54,6 +54,19 @@ export function Navbar() {
     }
   ]
 
+  // 管理员专用菜单项
+  const adminNavItems = [
+    {
+      href: "/admin/collaboration",
+      label: "协作管理",
+      icon: Users,
+      description: "管理实时协作功能"
+    }
+  ]
+
+  // 检查当前用户是否为管理员
+  const isAdmin = (session as any)?.user?.isAdmin || false
+
   const handleSignOut = async () => {
     await signOut({ redirect: false })
     window.location.href = "/auth/signin"
@@ -77,7 +90,31 @@ export function Navbar() {
             {/* Navigation Links */}
             {session && (
               <div className="flex items-center gap-2">
+                {/* 普通用户菜单 */}
                 {navItems.map((item) => {
+                  const Icon = item.icon
+                  const isActive = pathname === item.href
+
+                  return (
+                    <Link key={item.href} href={item.href}>
+                      <Button
+                        variant={isActive ? "default" : "ghost"}
+                        className={`flex items-center gap-2 ${
+                          isActive
+                            ? "bg-primary text-primary-foreground"
+                            : "hover:bg-muted"
+                        }`}
+                        title={item.description}
+                      >
+                        <Icon className="h-4 w-4" />
+                        <span className="hidden sm:inline">{item.label}</span>
+                      </Button>
+                    </Link>
+                  )
+                })}
+
+                {/* 管理员专用菜单 */}
+                {isAdmin && adminNavItems.map((item) => {
                   const Icon = item.icon
                   const isActive = pathname === item.href
 

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { X, CheckCircle, AlertCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -140,23 +140,23 @@ export function useToast() {
     duration?: number
   }>>([])
 
-  const addToast = (options: ToastOptions) => {
+  const addToast = useCallback((options: ToastOptions) => {
     const id = `toast-${++toastId}`
     setToasts(prev => [...prev, { id, ...options }])
-  }
+  }, [])
 
-  const removeToast = (id: string) => {
+  const removeToast = useCallback((id: string) => {
     setToasts(prev => prev.filter(toast => toast.id !== id))
-  }
+  }, [])
 
-  const toast = {
+  const toast = useCallback({
     success: (title: string, description?: string, duration?: number) =>
       addToast({ title, description, variant: 'success', duration }),
     error: (title: string, description?: string, duration?: number) =>
       addToast({ title, description, variant: 'error', duration }),
     default: (title: string, description?: string, duration?: number) =>
       addToast({ title, description, variant: 'default', duration })
-  }
+  }, [addToast])
 
   return {
     toasts,
